@@ -5,6 +5,7 @@
   "main": "talk.adoc",
   "scripts": {
     "build": "node build.js",
+    "stage": "rm -Rf staging && mkdir staging && cp index.html staging/ && cp -a plugins/ node_modules/ staging/",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
