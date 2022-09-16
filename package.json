@@ -1,0 +1,28 @@
+{
+  "name": "eclipsecon-2022-rust-embedded",
+  "version": "1.0.0",
+  "description": "EclipseCon 2022 Talk - Rust Embedded",
+  "main": "talk.adoc",
+  "scripts": {
+    "build": "node build.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/ctron/eclipsecon-2022-rust-embedded.git"
+  },
+  "contributors": [
+    "Ulf Lilleengen",
+    "Jens Reimann <ctron@dentrassi.de> (https://dentrassi.de)"
+  ],
+  "license": "CC-BY-NC-SA-4.0",
+  "bugs": {
+    "url": "https://github.com/ctron/eclipsecon-2022-rust-embedded/issues"
+  },
+  "homepage": "https://github.com/ctron/eclipsecon-2022-rust-embedded#readme",
+  "private": true,
+  "devDependencies": {
+    "@asciidoctor/core": "^2.2.6",
+    "@asciidoctor/reveal.js": "^5.0.0-rc.1"
+  }
+}

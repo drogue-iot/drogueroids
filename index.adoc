@@ -1,0 +1,13 @@
+= Rust: Embedded, Async, all the way!
+
+:docinfo: private
+
+Ulf Lilleengen, Jens Reimann
+
+== Slide 1
+
+Stuff
+
+== Slide 2
+
+More stuff
