@@ -21,10 +21,15 @@ More stuff
 * No operating system
 * No memory allocator
 
+[.columns]
 === How can we make progress?
 
+[.column]
 * "Everybody" writes in C
 * RTOS and SDKs are written in C
+
+[.column]
+image:images/in_c.png[Write in C]
 
 
 === What makes Rust great for embedded
@@ -35,13 +40,4 @@ More stuff
 
 === Bare metal vs standard library
 
-[cols="1,1,1"]
-|===
-|feature
-|no_std
-|std
-
-|heap (dynamic memory)
-|*
-|&check;
-|===
+image:images/no_std.png[Bare metal Rust]
