@@ -35,7 +35,7 @@ More stuff
 
 === Bare metal vs standard library
 
-[cols="1,1"]
+[cols="1,1,1"]
 |===
 |feature
 |no_std
