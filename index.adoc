@@ -11,3 +11,37 @@ Stuff
 == Slide 2
 
 More stuff
+
+== Rust Embedded
+
+=== Target hardware
+
+* 16 kB - 512 kB RAM
+* 128 kB - 2 MB ROM/Flash
+* No operating system
+* No memory allocator
+
+=== How can we make progress?
+
+* "Everybody" writes in C
+* RTOS and SDKs are written in C
+
+
+=== What makes Rust great for embedded
+
+* Traits (interfaces)
+* Dependency management
+* Safety
+
+=== Bare metal vs standard library
+
+[cols="1,1"]
+|===
+|feature
+|no_std
+|std
+
+|heap (dynamic memory)
+|*
+|&check;
+|===
