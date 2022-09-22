@@ -1,4 +1,4 @@
-= Rust: Embedded, Async, all the way!
+= Rust: Embedded, Async, all the way!
 :authors: Ulf Lilleengen; Jens Reimann
 :docinfo: private
 :icons: font
@@ -18,7 +18,7 @@ Software Engineers @ Red Hat
 
 * Work on open source IoT
 * Cloud & embedded
-* With a focus on Drogue IoT
+* With a focus on "Drogue IoT"
 
 == Why Rust?
 
@@ -38,6 +38,11 @@ A language empowering everyone to build reliable and efficient software.
 
 Those 70% of issue would never have existed, if Rust had been used!
 
+[%notitle]
+=== Microsoft
+
+image::images/twitter_1.png[]
+
 === Recall EclipseCon 2019?
 
 > A tale of Rust, the ESP32 and IoT
@@ -51,53 +56,22 @@ image::images/layers_2019.png[]
 
 === We can do better!
 
-== Rust Embedded
-
-=== Target hardware
-
-* 16 kB - 512 kB RAM
-* 128 kB - 2 MB ROM/Flash
-* No operating system
-* No memory allocator
-
-[.columns]
-=== How can we make progress?
-
-[.column]
-* "Everybody" writes in C
-* RTOS and SDKs are written in C
-
-[.column]
-image:images/in_c.png[Write in C]
-
-[.columns]
-=== What makes Rust great for embedded
-
-[.column]
-* Traits (interfaces)
-* Dependency management
-* Safety
-
-[.column]
-image:images/no_rtos.png[No RTOS needed]
-
-=== Bare metal vs standard library
-
-image:images/no_std.png[Bare metal Rust]
-
-=== Rust embedded ecosystem
-
-image:images/rust_layers.svg[Rust embedded layers]
-
-== Embedded Rust (take two)
+== Embedded Rust
 
 [.text-left]
-=== Target hardware
+=== Embedded?
 
 * 16 kB - 512 kB RAM
 * 128 kB - 2 MB ROM/Flash
 * No operating system
 * No memory allocator
+
+[.text-left]
+=== A working group
+
+* Rust Embedded
+* Working group of the Rust foundation
+* Community to collaborate on Rust embedded topics
 
 [.text-left]
 === Rust compiler
@@ -126,10 +100,11 @@ image:images/rust_layers.svg[Rust embedded layers]
 * Second step: we need to build something on top of the compiler
 * Mainly hardware abstraction and drivers
 * So that we can build applications
+* Some PACs and HALs come from the Rust embedded WG
 --
 
 [.text-left]
-=== Existing projects
+=== Creating applications
 
 * Plain Rust
 * RTIC
@@ -185,9 +160,22 @@ Rust requires an "executor" to drive async workload.
 * Async executor for `std`
 * Builds on top of an I/O loop
 
+=== Bare metal vs standard library
+
+image:images/no_std.png[Bare metal Rust]
+
+[.notes]
+--
+* "std" means: standard library
+* std requires a posix like operating systems, or windows
+* "core" requires at lot less, but doesn't even have dynamic memory
+* "alloc" brings dynamic memory, but it is optional
+* not having "std" is often named "no_std"
+--
+
 === Embassy
 
-An executor for embedded Rust.
+An executor for embedded Rust, supporting `no_std`.
 
 [.notes]
 --
@@ -204,15 +192,22 @@ Embassy can be combined with other async Rust components.
 --
 
 * Embedded HALs
+* Ector
 * Drogue Device
+* …
+
+[.text-left]
+=== Ector
+
+An actor based application framework.
+
 
 [.text-left]
 === Drogue Device
 
-An actor based application framework. Consisting of drivers and actors to help you build an application.
+Bringing all components together: Bootloader, Embassy, HALs, Ector, Drivers, OTA, …
 
-== Embedded Rust
-
+== DEMO?
 
 [.text-left]
 == Rust embedded community
