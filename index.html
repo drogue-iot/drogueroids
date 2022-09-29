@@ -421,28 +421,52 @@ ul.byline li + li {
 <section id="_what_do_we_do"><h2>What do we do?</h2><div class="slide-content"><div class="ulist"><ul><li><p>Work on open source IoT</p></li><li><p>Cloud &amp; embedded</p></li><li><p>With a focus on "Drogue IoT"</p></li></ul></div></div></section>
 <section><section id="_why_rust"><h2>Why Rust?</h2></section><section id="_why_rust_2"><div class="slide-content"><div class="quoteblock"><blockquote>A language empowering everyone to build reliable and efficient software.</blockquote><div class="attribution">&#8212; https://rust-lang.org</div></div></div></section><section id="_microsoft"><div class="slide-content"><div class="quoteblock"><blockquote>~70% of the vulnerabilities Microsoft assigns a CVE each year continue to be memory safety issues</blockquote><div class="attribution"><cite>A proactive approach to more secure code</cite><br>&#8212; Microsoft</div></div></div></section><section id="_meaning"><h2>Meaning?</h2><div class="slide-content"><div class="paragraph"><p>Those 70% of issue would never have existed, if Rust had been used!</p></div></div></section><section id="_microsoft_2"><div class="slide-content"><div class="imageblock"><img src="images/twitter_1.png" alt="twitter 1"></div></div></section><section id="_recall_eclipsecon_2019"><h2>Recall EclipseCon 2019?</h2><div class="slide-content"><div class="quoteblock"><blockquote><div class="paragraph"><p>A tale of Rust, the ESP32 and IoT</p></div></blockquote></div>
 <div class="quoteblock"><blockquote><div class="paragraph"><p>A talk to get you excited about Rust.</p></div></blockquote></div></div></section><section id="_slide"><div class="slide-content"><div class="imageblock"><img src="images/layers_2019.png" alt="layers 2019"></div></div></section><section id="_we_can_do_better"><h2>We can do better!</h2></section></section>
-<section><section id="_embedded_rust"><h2>Embedded Rust</h2></section><section id="_embedded" class="text-left"><h2>Embedded?</h2><div class="slide-content"><div class="ulist"><ul><li><p>16 kB - 512 kB RAM</p></li><li><p>128 kB - 2 MB ROM/Flash</p></li><li><p>No operating system</p></li><li><p>No memory allocator</p></li></ul></div></div></section><section id="_a_working_group" class="text-left"><h2>A working group</h2><div class="slide-content"><div class="ulist"><ul><li><p>Rust Embedded</p></li><li><p>Working group of the Rust foundation</p></li><li><p>Community to collaborate on Rust embedded topics</p></li></ul></div></div></section><section id="_rust_compiler" class="text-left"><h2>Rust compiler</h2><div class="slide-content"><div class="ulist"><ul><li><p>ARM (Cortex-M)</p><div class="ulist"><ul><li><p>STM32</p></li><li><p>nRF (micro:bit)</p></li><li><p>Raspberry Pi Pico</p></li></ul></div></li><li><p>RISC-V</p><div class="ulist"><ul><li><p>ESP32 C3</p></li></ul></div></li><li><p>…</p></li></ul></div>
+<section><section id="_embedded_rust"><h2>Embedded Rust</h2></section><section id="_embedded" class="text-left"><h2>Embedded?</h2><div class="slide-content"><div class="ulist"><ul><li><p>16 kB - 512 kB RAM</p></li><li><p>128 kB - 2 MB ROM/Flash</p></li><li><p>No operating system</p></li><li><p>No memory allocator</p></li></ul></div></div></section><section id="_a_working_group" class="text-left"><h2>A working group</h2><div class="slide-content"><div class="ulist"><ul><li><p>Rust Embedded</p></li><li><p>Official working group of the Rust language</p></li><li><p>Community to collaborate on Rust embedded topics</p></li></ul></div></div></section><section id="_rust_compiler" class="text-left"><h2>Rust compiler</h2><div class="slide-content"><div class="ulist"><ul><li><p>ARM (Cortex-M)</p><div class="ulist"><ul><li><p>STM32</p></li><li><p>nRF (micro:bit)</p></li><li><p>Raspberry Pi Pico</p></li></ul></div></li><li><p>RISC-V</p><div class="ulist"><ul><li><p>ESP32 C3</p></li></ul></div></li><li><p>…</p></li></ul></div>
 <aside class="notes"><div class="ulist"><ul><li><p>First thing, we need a compiler</p></li><li><p>Rust offers compilers for different embedded architectures out of the box</p></li><li><p>But that doesn&#8217;t give you any functionality yet</p></li></ul></div></aside></div></section><section id="_layers"><h2>Layers</h2><div class="slide-content"><div class="paragraph"><p><span class="image"><img src="images/rust_layers.svg" alt="Rust embedded layers"></span></p></div>
 <aside class="notes"><div class="ulist"><ul><li><p>Second step: we need to build something on top of the compiler</p></li><li><p>Mainly hardware abstraction and drivers</p></li><li><p>So that we can build applications</p></li><li><p>Some PACs and HALs come from the Rust embedded WG</p></li></ul></div></aside></div></section><section id="_creating_applications" class="text-left"><h2>Creating applications</h2><div class="slide-content"><div class="ulist"><ul><li><p>Plain Rust</p></li><li><p>RTIC</p></li><li><p>Embassy</p></li></ul></div>
 <aside class="notes"><div class="ulist"><ul><li><p>First there was plain Rust</p></li><li><p>This was used in the 2019 example, combined with FreeRTOS from the ESP-IDF</p></li><li><p>In order to support an easier development model with interrupts, RTIC was created</p></li><li><p>But then came <code>async</code> and changed the landscape of Rust</p></li></ul></div></aside></div></section></section>
-<section><section id="_async_rust"><h2>Async Rust</h2><div class="slide-content"><aside class="notes"><div class="paragraph"><p>What is async Rust? And how does it help in the context of "embedded"?</p></div></aside></div></section><section id="_a_different_approach" class="columns"><h2>A different approach</h2><div class="slide-content"><div class="listingblock column"><div class="content"><pre class="highlightjs highlight"><code class="language-rust hljs" data-noescape="true" data-lang="rust">async fn run () {
-  select (
+<section><section id="_async_rust"><h2>Async Rust</h2><div class="slide-content"><aside class="notes"><div class="paragraph"><p>What is async Rust? And how does it help in the context of "embedded"?</p></div></aside></div></section><section id="_without_async"><h2>Without async</h2><div class="slide-content"><div class="listingblock column"><div class="content"><pre class="highlightjs highlight"><code class="language-rust hljs" data-noescape="true" data-lang="rust">fn main() {
+    let mut button = Button::new();
+    let mut led = Led::new();
     loop {
-      Timer::sleep_ms(250).await;
-      leds.0.toggle();
-    },
-    loop {
-      leds.1.off();
-      button.wait_for_low().await;
-      leds.1.on();
-      button.wait_for_high().await;
+        if button.is_pressed() {
+            led.on();
+        } else {
+            led.off();
+        }
     }
-  ).await;
 }</code></pre></div></div>
-<div class="paragraph column"><p><span class="image"><img src="images/no_rtos.png" alt="No RTOS needed"></span></p></div></div></section><section id="_async_executor"><h2>Async executor</h2><div class="slide-content"><div class="paragraph"><p>Rust requires an "executor" to drive async workload.</p></div></div></section><section id="_tokio" class="text-left"><h2>Tokio</h2><div class="slide-content"><div class="ulist"><ul><li><p>Async executor for <code>std</code></p></li><li><p>Builds on top of an I/O loop</p></li></ul></div></div></section><section id="_bare_metal_vs_standard_library"><h2>Bare metal vs standard library</h2><div class="slide-content"><div class="paragraph"><p><span class="image"><img src="images/no_std.png" alt="Bare metal Rust"></span></p></div>
+<div class="ulist"><ul><li><p>Inefficient (busy looping)</p></li></ul></div></div></section><section id="_using_interrupts"><h2>Using interrupts</h2><div class="slide-content"><div class="listingblock column"><div class="content"><pre class="highlightjs highlight"><code class="language-rust hljs" data-noescape="true" data-lang="rust">static BUTTON: Mutex&lt;Option&lt;Button&gt;&gt; = Mutex::new(None);
+static LED: Mutex&lt;Option&lt;Led&gt;&gt; = Mutex::new(None);
+fn main() {
+    LED.lock().replace(Led::new());
+    BUTTON.lock().replace(Button::new());
+    setup_irq(button_event); // Magic
+}
+
+fn button_event() {
+    if BUTTON.lock().as_mut().unwrap().is_pressed() {
+        LED.lock().as_mut().unwrap().on();
+    } else {
+        LED.lock().as_mut().unwrap().off();
+    }
+}</code></pre></div></div>
+<div class="ulist"><ul><li><p>Complex!</p></li></ul></div></div></section><section id="_using_async"><h2>Using async</h2><div class="slide-content"><div class="listingblock column"><div class="content"><pre class="highlightjs highlight"><code class="language-rust hljs" data-noescape="true" data-lang="rust">async fn main() {
+    let mut button = Button::new();
+    let mut led = Led::new();
+    loop {
+        button.wait_changed().await;
+        if button.is_pressed() {
+            led.on();
+        } else {
+            led.off();
+        }
+    }
+}</code></pre></div></div>
+<div class="ulist"><ul><li><p>Interrupt handling internally</p></li><li><p>Efficient - executor puts app to sleep on await points</p></li></ul></div></div></section><section id="_async_executor"><h2>Async executor</h2><div class="slide-content"><div class="paragraph"><p>Rust requires an "executor" to drive async workload.</p></div></div></section><section id="_tokio" class="text-left"><h2>Tokio</h2><div class="slide-content"><div class="ulist"><ul><li><p>Async executor for <code>std</code></p></li><li><p>Builds on top of an I/O loop</p></li></ul></div></div></section><section id="_bare_metal_vs_standard_library"><h2>Bare metal vs standard library</h2><div class="slide-content"><div class="paragraph"><p><span class="image"><img src="images/no_std.png" alt="Bare metal Rust"></span></p></div>
 <aside class="notes"><div class="ulist"><ul><li><p>"std" means: standard library</p></li><li><p>std requires a posix like operating systems, or windows</p></li><li><p>"core" requires at lot less, but doesn&#8217;t even have dynamic memory</p></li><li><p>"alloc" brings dynamic memory, but it is optional</p></li><li><p>not having "std" is often named "no_std"</p></li></ul></div></aside></div></section><section id="_embassy"><h2>Embassy</h2><div class="slide-content"><div class="paragraph"><p>An executor for embedded Rust, supporting <code>no_std</code>.</p></div>
 <aside class="notes"><div class="ulist"><ul><li><p>Rust "async" need an executor to drive async workload</p></li><li><p>In "std", common executors are Tokio or "async-std"</p></li></ul></div></aside></div></section><section id="_embassy_friends" class="text-left"><h2>Embassy &amp; friends</h2><div class="slide-content"><aside class="notes"><div class="paragraph"><p>Embassy can be combined with other async Rust components.</p></div></aside>
-<div class="ulist"><ul><li><p>Embedded HALs</p></li><li><p>Ector</p></li><li><p>Drogue Device</p></li><li><p>…</p></li></ul></div></div></section><section id="_ector" class="text-left"><h2>Ector</h2><div class="slide-content"><div class="paragraph"><p>An actor based application framework.</p></div></div></section><section id="_drogue_device" class="text-left"><h2>Drogue Device</h2><div class="slide-content"><div class="paragraph"><p>Bringing all components together: Bootloader, Embassy, HALs, Ector, Drivers, OTA, …</p></div></div></section></section>
+<div class="ulist"><ul><li><p>Embedded HALs</p></li><li><p>Ector</p></li><li><p>Drogue Device</p></li><li><p>…</p></li></ul></div></div></section><section id="_ector" class="text-left"><h2>Ector</h2><div class="slide-content"><div class="paragraph"><p>An actor based application framework.</p></div></div></section><section id="_drogue_device" class="text-left"><h2>Drogue Device</h2><div class="slide-content"><div class="paragraph"><p>Bringing all components together: Bootloader, Embassy, HALs, Ector, Drivers, OTA, …</p></div></div></section><section id="_what_rtos"><h2>What RTOS?</h2><div class="slide-content"><div class="paragraph column"><p><span class="image"><img src="images/no_rtos.png" alt="No RTOS needed"></span></p></div></div></section></section>
 <section id="_demo"><h2>DEMO?</h2></section>
 <section id="_rust_embedded_community" class="text-left"><h2>Rust embedded community</h2><div class="slide-content"><div class="paragraph"><p>Join the community!</p></div>
 <div class="ulist"><ul><li><p><a href="https://github.com/rust-embedded" class="bare">https://github.com/rust-embedded</a></p></li></ul></div>

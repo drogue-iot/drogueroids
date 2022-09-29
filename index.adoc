@@ -70,7 +70,7 @@ image::images/layers_2019.png[]
 === A working group
 
 * Rust Embedded
-* Working group of the Rust foundation
+* Official working group of the Rust language
 * Community to collaborate on Rust embedded topics
 
 [.text-left]
@@ -125,30 +125,72 @@ image:images/rust_layers.svg[Rust embedded layers]
 What is async Rust? And how does it help in the context of "embedded"?
 --
 
-[.columns]
-=== A different approach
+=== Without async
 
 [.column]
 [source,rust]
 ----
-async fn run () {
-  select (
+fn main() {
+    let mut button = Button::new();
+    let mut led = Led::new();
     loop {
-      Timer::sleep_ms(250).await;
-      leds.0.toggle();
-    },
-    loop {
-      leds.1.off();
-      button.wait_for_low().await;
-      leds.1.on();
-      button.wait_for_high().await;
+        if button.is_pressed() {
+            led.on();
+        } else {
+            led.off();
+        }
     }
-  ).await;
 }
 ----
 
+* Inefficient (busy looping)
+
+=== Using interrupts
+
 [.column]
-image:images/no_rtos.png[No RTOS needed]
+[source,rust]
+----
+static BUTTON: Mutex<Option<Button>> = Mutex::new(None);
+static LED: Mutex<Option<Led>> = Mutex::new(None);
+fn main() {
+    LED.lock().replace(Led::new());
+    BUTTON.lock().replace(Button::new());
+    setup_irq(button_event); // Magic
+}
+
+fn button_event() {
+    if BUTTON.lock().as_mut().unwrap().is_pressed() {
+        LED.lock().as_mut().unwrap().on();
+    } else {
+        LED.lock().as_mut().unwrap().off();
+    }
+}
+----
+
+* Complex!
+
+=== Using async
+
+[.column]
+[source,rust]
+----
+async fn main() {
+    let mut button = Button::new();
+    let mut led = Led::new();
+    loop {
+        button.wait_changed().await;
+        if button.is_pressed() {
+            led.on();
+        } else {
+            led.off();
+        }
+    }
+}
+----
+
+* Interrupt handling internally
+* Efficient - executor puts app to sleep on await points
+
 
 === Async executor
 
@@ -206,6 +248,11 @@ An actor based application framework.
 === Drogue Device
 
 Bringing all components together: Bootloader, Embassy, HALs, Ector, Drivers, OTA, …
+
+=== Why RTOS?
+
+[.column]
+image:images/no_rtos.png[No RTOS needed]
 
 == DEMO?
 
