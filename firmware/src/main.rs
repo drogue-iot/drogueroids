@@ -77,7 +77,7 @@ async fn main(s: Spawner) {
     let server = GATT.init(GattServer::new(sd).unwrap());
     server
         .device_info
-        .initialize(b"Drogue Low Energy", b"1.0", b"Red Hat", b"1.0")
+        .initialize(b"Drogue Presenter", b"1.0", b"Red Hat", b"1.0")
         .unwrap();
     server
         .env
@@ -134,7 +134,7 @@ async fn main(s: Spawner) {
         server,
         EVENTS.sender().into(),
         BUTTONS.receiver().into(),
-        "Drogue Low Energy",
+        "Drogue Presenter",
     ))
     .unwrap();
 
@@ -157,10 +157,12 @@ pub async fn button_watcher(
     loop {
         match select(a.wait_for_falling_edge(), b.wait_for_falling_edge()).await {
             Either::First(_) => {
+                defmt::info!("PRESSED A ");
                 presses[0] += 1;
                 buttons.send(presses).await;
             }
             Either::Second(_) => {
+                defmt::info!("PRESSED B ");
                 presses[1] += 1;
                 buttons.send(presses).await;
             }
@@ -203,6 +205,7 @@ pub async fn gatt_server_task(
     events: DynamicSender<'static, FirmwareServiceEvent>,
     buttons: DynamicReceiver<'static, [u8; 2]>,
 ) {
+    defmt::info!("Started gatt server for connection");
     let mut notify_buttons = false;
     let mut notify = false;
     let mut ticker = Ticker::every(Duration::from_secs(5));
@@ -227,7 +230,8 @@ pub async fn gatt_server_task(
                 }
                 GattServerEvent::Buttons(e) => match e {
                     ButtonsServiceEvent::PressesCccdWrite { notifications } => {
-                        notify_buttons = true;
+                        defmt::info!("Enable button notifications");
+                        notify_buttons = notifications;
                     }
                 },
                 _ => {}
