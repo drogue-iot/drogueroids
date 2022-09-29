@@ -6,56 +6,47 @@
 #![allow(unused_imports)]
 #![allow(unused_variables)]
 
-use core::num::Wrapping;
-use core::sync::atomic::{AtomicU8, Ordering};
-use drogue_device::drivers::ble::gatt::{
-    device_info::{DeviceInformationService, DeviceInformationServiceEvent},
-    environment::*,
-    buttons::*,
-};
-use drogue_device::shared::Shared;
-use drogue_device::traits::{
-    button::Button,
-    led::ToFrame
-};
-use drogue_device::Board;
-use drogue_device::{bsp::boards::nrf52::microbit::Microbit, domain::led::matrix::Brightness};
 use drogue_device::{
-    drivers::ble::gatt::dfu::{FirmwareGattService, FirmwareService, FirmwareServiceEvent},
+    drivers::ble::gatt::{
+        device_info::{DeviceInformationService, DeviceInformationServiceEvent},
+        dfu::{FirmwareGattService, FirmwareService, FirmwareServiceEvent},
+        environment::*,
+    },
     firmware::{FirmwareManager, SharedFirmwareManager},
+    shared::Shared,
+    Board,
 };
-use drogue_device::boards::nrf52::microbit::{PinButtonA, PinButtonB};
-use embassy::blocking_mutex::raw::ThreadModeRawMutex;
-use embassy::channel::mpmc::{Channel, DynamicReceiver, DynamicSender};
-use embassy::executor::Spawner;
-use embassy::time::Delay;
-use embassy::time::Ticker;
-use embassy::time::{Duration, Timer};
-use embassy::util::Forever;
-use embassy::util::{select, select3, Either, Either3};
-use embassy_nrf::config::Config;
-use embassy_nrf::interrupt::Priority;
+use embassy_executor::Spawner;
+use embassy_futures::select::{select, select3, Either, Either3};
 use embassy_nrf::{
     buffered_uarte::{BufferedUarte, State},
+    config::Config,
     interrupt,
+    interrupt::Priority,
     peripherals::{TIMER0, UARTE0},
-    uarte, Peripherals,
+    uarte,
 };
+use embassy_sync::{
+    blocking_mutex::raw::ThreadModeRawMutex,
+    channel::{Channel, DynamicReceiver, DynamicSender},
+};
+use embassy_time::{Delay, Duration, Ticker, Timer};
 use futures::StreamExt;
 use heapless::Vec;
-use nrf_softdevice::ble::gatt_server;
-use nrf_softdevice::ble::peripheral;
-use nrf_softdevice::{ble::Connection, raw, temperature_celsius, Flash, Softdevice};
+use microbit_bsp::*;
+use nrf_softdevice::{
+    ble::{gatt_server, peripheral, Connection},
+    raw, temperature_celsius, Flash, Softdevice,
+};
+use static_cell::StaticCell;
 
-#[cfg(feature = "dfu")]
 use embassy_boot_nrf::FirmwareUpdater;
-use embassy_nrf::gpio::{AnyPin, Input};
 
 #[cfg(feature = "panic-probe")]
 use panic_probe as _;
 
-#[cfg(feature = "nrf-softdevice-defmt-rtt")]
-use nrf_softdevice_defmt_rtt as _;
+#[cfg(feature = "defmt-rtt")]
+use defmt_rtt as _;
 
 #[cfg(feature = "panic-reset")]
 use panic_reset as _;
@@ -71,20 +62,19 @@ fn config() -> Config {
     config
 }
 
-#[embassy::main(config = "config()")]
-async fn main(s: Spawner, p: Peripherals) {
-    let board = Microbit::new(p);
+#[embassy_executor::main]
+async fn main(s: Spawner) {
+    let board = Microbit::new(config());
 
     // Spawn the underlying softdevice task
     let sd = enable_softdevice("Drogue Presenter");
-    s.spawn(softdevice_task(sd)).unwrap();
 
     let version = FIRMWARE_REVISION.unwrap_or(FIRMWARE_VERSION);
     defmt::info!("Running firmware version {}", version);
 
     // Create a BLE GATT server and make it static
-    static GATT: Forever<GattServer> = Forever::new();
-    let server = GATT.put(gatt_server::register(sd).unwrap());
+    static GATT: StaticCell<GattServer> = StaticCell::new();
+    let server = GATT.init(GattServer::new(sd).unwrap());
     server
         .device_info
         .initialize(b"Drogue Low Energy", b"1.0", b"Red Hat", b"1.0")
@@ -108,37 +98,34 @@ async fn main(s: Spawner, p: Peripherals) {
         .trigger_set(TriggerSetting::FixedInterval(5).to_vec())
         .unwrap();
 
+    s.spawn(softdevice_task(sd)).unwrap();
+
+    static BUTTONS: Channel<ThreadModeRawMutex, [u8; 2], 10> = Channel::new();
+    s.spawn(button_watcher(
+        board.btn_a,
+        board.btn_b,
+        BUTTONS.sender().into(),
+    ))
+    .unwrap();
+
     // Firmware update service event channel and task
     static EVENTS: Channel<ThreadModeRawMutex, FirmwareServiceEvent, 10> = Channel::new();
-    #[cfg(feature = "dfu")]
-    {
-        // The updater is the 'application' part of the bootloader that knows where bootloader
-        // settings and the firmware update partition is located based on memory.x linker script.
-        static DFU: Shared<FirmwareManager<Flash, 4096, 64>> = Shared::new();
-        let dfu = DFU.initialize(FirmwareManager::new(
-            Flash::take(sd),
-            FirmwareUpdater::default(),
-            version.as_bytes(),
-        ));
-        let updater =
-            FirmwareGattService::new(&server.firmware, dfu.clone(), version.as_bytes(), 64)
-                .unwrap();
-        s.spawn(updater_task(updater, EVENTS.receiver().into()))
-            .unwrap();
+    // The updater is the 'application' part of the bootloader that knows where bootloader
+    // settings and the firmware update partition is located based on memory.x linker script.
+    static DFU: Shared<FirmwareManager<Flash, 4096, 64>> = Shared::new();
+    let dfu = DFU.initialize(FirmwareManager::new(
+        Flash::take(sd),
+        FirmwareUpdater::default(),
+        version.as_bytes(),
+    ));
+    let updater =
+        FirmwareGattService::new(&server.firmware, dfu.clone(), version.as_bytes(), 64).unwrap();
+    s.spawn(updater_task(updater, EVENTS.receiver().into()))
+        .unwrap();
 
-        // Watchdog will prevent bootloader from resetting. If your application hangs for more than 5 seconds
-        // (depending on bootloader config), it will enter bootloader which may swap the application back.
-        s.spawn(watchdog_task()).unwrap();
-    }
-
-    static BUTTONS: Forever<Buttons> = Forever::new();
-    let buttons = BUTTONS.put(Buttons {
-        a: AtomicU8::new(0),
-        b: AtomicU8::new(0),
-    });
-
-    // count button presses
-    s.spawn(button_watcher(board.btn_a, board.btn_b, buttons)).unwrap();
+    // Watchdog will prevent bootloader from resetting. If your application hangs for more than 5 seconds
+    // (depending on bootloader config), it will enter bootloader which may swap the application back.
+    s.spawn(watchdog_task()).unwrap();
 
     // Starts the bluetooth advertisement and GATT server
     s.spawn(advertiser_task(
@@ -146,66 +133,56 @@ async fn main(s: Spawner, p: Peripherals) {
         sd,
         server,
         EVENTS.sender().into(),
-        "Drogue Presenter",
-        buttons,
+        BUTTONS.receiver().into(),
+        "Drogue Low Energy",
     ))
     .unwrap();
 
-    defmt::info!("Running main loop");
-
     // Finally, a blinker application.
     let mut display = board.display;
-    display.set_brightness(Brightness::MAX);
+    display.set_brightness(display::Brightness::MAX);
     loop {
-        let _ = display
-            .display('A'.to_frame(), Duration::from_secs(1))
-            .await;
+        let _ = display.display('A'.into(), Duration::from_secs(1)).await;
         Timer::after(Duration::from_secs(1)).await;
     }
 }
 
-pub struct Buttons {
-    pub a: AtomicU8,
-    pub b: AtomicU8,
-}
-
-#[cfg(feature = "dfu")]
-#[nrf_softdevice::gatt_server]
-pub struct GattServer {
-    pub firmware: FirmwareService,
-    pub env: EnvironmentSensingService,
-    pub buttons: ButtonsService,
-    pub device_info: DeviceInformationService,
-}
-
-#[cfg(not(feature = "dfu"))]
-#[nrf_softdevice::gatt_server]
-pub struct GattServer {
-    pub env: EnvironmentSensingService,
-    pub buttons: ButtonsService,
-    pub device_info: DeviceInformationService,
-}
-
-#[embassy::task]
-pub async fn button_watcher(mut a: PinButtonA, mut b: PinButtonB, buttons: &'static Buttons) {
-    let mut cnt_a = Wrapping(0u8);
-    let mut cnt_b = Wrapping(0u8);
-
+#[embassy_executor::task]
+pub async fn button_watcher(
+    mut a: Button,
+    mut b: Button,
+    buttons: DynamicSender<'static, [u8; 2]>,
+) {
+    let mut presses = [0u8; 2];
     loop {
-        match select(a.wait_pressed(), b.wait_pressed()).await {
+        match select(a.wait_for_falling_edge(), b.wait_for_falling_edge()).await {
             Either::First(_) => {
-                cnt_a += 1;
-                buttons.a.store(cnt_a.0, Ordering::Release);
-            },
+                presses[0] += 1;
+                buttons.send(presses).await;
+            }
             Either::Second(_) => {
-                cnt_b += 1;
-                buttons.b.store(cnt_b.0, Ordering::Release);
-            },
+                presses[1] += 1;
+                buttons.send(presses).await;
+            }
         }
     }
 }
 
-#[embassy::task]
+#[nrf_softdevice::gatt_server]
+pub struct GattServer {
+    pub firmware: FirmwareService,
+    pub env: EnvironmentSensingService,
+    pub device_info: DeviceInformationService,
+    pub buttons: ButtonsService,
+}
+
+#[nrf_softdevice::gatt_service(uuid = "b44fabf6-35b2-11ed-883f-d45d6455d2cc")]
+pub struct ButtonsService {
+    #[characteristic(uuid = "b4ad9022-35b2-11ed-a76a-d45d6455d2cc", read, notify)]
+    pub presses: [u8; 2],
+}
+
+#[embassy_executor::task]
 pub async fn updater_task(
     mut dfu: FirmwareGattService<'static, SharedFirmwareManager<'static, Flash, 4096, 64>>,
     events: DynamicReceiver<'static, FirmwareServiceEvent>,
@@ -218,30 +195,22 @@ pub async fn updater_task(
     }
 }
 
-#[embassy::task(pool_size = "6")]
+#[embassy_executor::task(pool_size = "6")]
 pub async fn gatt_server_task(
     sd: &'static Softdevice,
     conn: Connection,
     server: &'static GattServer,
     events: DynamicSender<'static, FirmwareServiceEvent>,
-    buttons: &'static Buttons,
+    buttons: DynamicReceiver<'static, [u8; 2]>,
 ) {
+    let mut notify_buttons = false;
     let mut notify = false;
     let mut ticker = Ticker::every(Duration::from_secs(5));
     let env_service = &server.env;
-
-    let mut notify_presses = false;
-    let mut reported_presses = [0u8;2];
-    let mut ticker_presses = Ticker::every(Duration::from_millis(250));
     let buttons_service = &server.buttons;
-
     loop {
         let mut interval = None;
         let next = ticker.next();
-
-        let mut interval_presses = None;
-        let next_presses = ticker_presses.next();
-
         match select3(
             gatt_server::run(&conn, server, |e| match e {
                 GattServerEvent::Env(e) => match e {
@@ -253,23 +222,18 @@ pub async fn gatt_server_task(
                         interval.replace(Duration::from_secs(period as u64));
                     }
                 },
-                GattServerEvent::Buttons(e) => match e {
-                    ButtonsServiceEvent::PressesCccdWrite { notifications } => {
-                        notify_presses = notifications;
-                    }
-                    ButtonsServiceEvent::PeriodWrite(period) => {
-                        defmt::info!("Setting interval to {} seconds", period);
-                        interval_presses.replace(Duration::from_millis(period as u64));
-                    }
-                },
-                #[cfg(feature = "dfu")]
                 GattServerEvent::Firmware(e) => {
                     let _ = events.try_send(e);
                 }
+                GattServerEvent::Buttons(e) => match e {
+                    ButtonsServiceEvent::PressesCccdWrite { notifications } => {
+                        notify_buttons = true;
+                    }
+                },
                 _ => {}
             }),
             next,
-            next_presses,
+            buttons.recv(),
         )
         .await
         {
@@ -290,22 +254,9 @@ pub async fn gatt_server_task(
                     env_service.temperature_notify(&conn, value).unwrap();
                 }
             }
-            Either3::Third(_) => {
-
-                let a = buttons.a.load(Ordering::Acquire);
-                let b = buttons.b.load(Ordering::Acquire);
-
-                defmt::info!("Button presses - a: {}, b: {}", a, b);
-
-                if a != reported_presses[0] || b != reported_presses[1] {
-                    reported_presses[0] = a;
-                    reported_presses[1] = b;
-                    buttons_service.presses_set(reported_presses).unwrap();
-                }
-
-                if notify {
-                    defmt::trace!("Notifying");
-                    buttons_service.presses_notify(&conn, reported_presses).unwrap();
+            Either3::Third(presses) => {
+                if notify_buttons {
+                    buttons_service.presses_notify(&conn, presses).unwrap();
                 }
             }
         }
@@ -313,22 +264,17 @@ pub async fn gatt_server_task(
         if let Some(interval) = interval.take() {
             ticker = Ticker::every(interval);
         }
-
-        /*
-        if let Some(interval_presses) = interval_presses.take() {
-            ticker_presses = Ticker::every(interval_presses);
-        }*/
     }
 }
 
-#[embassy::task]
+#[embassy_executor::task]
 pub async fn advertiser_task(
     spawner: Spawner,
     sd: &'static Softdevice,
     server: &'static GattServer,
     events: DynamicSender<'static, FirmwareServiceEvent>,
+    buttons: DynamicReceiver<'static, [u8; 2]>,
     name: &'static str,
-    buttons: &'static Buttons,
 ) {
     let mut adv_data: Vec<u8, 31> = Vec::new();
     #[rustfmt::skip]
@@ -356,13 +302,19 @@ pub async fn advertiser_task(
             .unwrap();
 
         defmt::debug!("connection established");
-        if let Err(e) = spawner.spawn(gatt_server_task(sd, conn, server, events.clone(), buttons)) {
+        if let Err(e) = spawner.spawn(gatt_server_task(
+            sd,
+            conn,
+            server,
+            events.clone(),
+            buttons.clone(),
+        )) {
             defmt::warn!("Error spawning gatt task: {:?}", e);
         }
     }
 }
 
-fn enable_softdevice(name: &'static str) -> &'static Softdevice {
+fn enable_softdevice(name: &'static str) -> &'static mut Softdevice {
     let config = nrf_softdevice::Config {
         clock: Some(raw::nrf_clock_lf_cfg_t {
             source: raw::NRF_CLOCK_LF_SRC_RC as u8,
@@ -396,13 +348,13 @@ fn enable_softdevice(name: &'static str) -> &'static Softdevice {
     Softdevice::enable(&config)
 }
 
-#[embassy::task]
+#[embassy_executor::task]
 async fn softdevice_task(sd: &'static Softdevice) {
     sd.run().await;
 }
 
 // Keeps our system alive
-#[embassy::task]
+#[embassy_executor::task]
 async fn watchdog_task() {
     let mut handle = unsafe { embassy_nrf::wdt::WatchdogHandle::steal(0) };
     loop {
