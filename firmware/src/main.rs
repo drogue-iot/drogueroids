@@ -100,7 +100,7 @@ async fn main(s: Spawner) {
 
     s.spawn(softdevice_task(sd)).unwrap();
 
-    static BUTTONS: Channel<ThreadModeRawMutex, [u8; 2], 10> = Channel::new();
+    static BUTTONS: Channel<ThreadModeRawMutex, [u32; 2], 10> = Channel::new();
     s.spawn(button_watcher(
         board.btn_a,
         board.btn_b,
@@ -151,20 +151,20 @@ async fn main(s: Spawner) {
 pub async fn button_watcher(
     mut a: Button,
     mut b: Button,
-    buttons: DynamicSender<'static, [u8; 2]>,
+    buttons: DynamicSender<'static, [u32; 2]>,
 ) {
-    let mut presses = [0u8; 2];
+    let mut presses = [0u32; 2];
     loop {
         match select(a.wait_for_falling_edge(), b.wait_for_falling_edge()).await {
             Either::First(_) => {
                 defmt::info!("PRESSED A ");
                 presses[0] += 1;
-                buttons.send(presses).await;
+                let _ = buttons.try_send(presses);
             }
             Either::Second(_) => {
                 defmt::info!("PRESSED B ");
                 presses[1] += 1;
-                buttons.send(presses).await;
+                let _ = buttons.try_send(presses);
             }
         }
     }
@@ -203,7 +203,7 @@ pub async fn gatt_server_task(
     conn: Connection,
     server: &'static GattServer,
     events: DynamicSender<'static, FirmwareServiceEvent>,
-    buttons: DynamicReceiver<'static, [u8; 2]>,
+    buttons: DynamicReceiver<'static, [u32; 2]>,
 ) {
     defmt::info!("Started gatt server for connection");
     let mut notify_buttons = false;
@@ -260,6 +260,7 @@ pub async fn gatt_server_task(
             }
             Either3::Third(presses) => {
                 if notify_buttons {
+                    let presses = [presses[0] as u8, presses[1] as u8];
                     buttons_service.presses_notify(&conn, presses).unwrap();
                 }
             }
@@ -277,7 +278,7 @@ pub async fn advertiser_task(
     sd: &'static Softdevice,
     server: &'static GattServer,
     events: DynamicSender<'static, FirmwareServiceEvent>,
-    buttons: DynamicReceiver<'static, [u8; 2]>,
+    buttons: DynamicReceiver<'static, [u32; 2]>,
     name: &'static str,
 ) {
     let mut adv_data: Vec<u8, 31> = Vec::new();

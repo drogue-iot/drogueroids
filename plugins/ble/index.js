@@ -4,6 +4,8 @@ const TEMP_CHAR = "00002a1f-0000-1000-8000-00805f9b34fb";
 const BUTTONS_SERVICE = "b44fabf6-35b2-11ed-883f-d45d6455d2cc";
 const PRESSES_CHAR = "b4ad9022-35b2-11ed-a76a-d45d6455d2cc"
 
+const DFU_SERVICE = "00001000-b0cd-11ec-871f-d45ddf138840";
+
 class BlePluginInstance {
 
     #state;
@@ -26,7 +28,8 @@ class BlePluginInstance {
             ],
             optionalServices: [
                 ENV_SERVICE,
-                BUTTONS_SERVICE
+                BUTTONS_SERVICE,
+	        DFU_SERVICE
             ],
         })
             .then((device) => {
