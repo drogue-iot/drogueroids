@@ -16,6 +16,7 @@ use drogue_device::{
     shared::Shared,
     Board,
 };
+use embassy_boot_nrf::FirmwareUpdater;
 use embassy_executor::Spawner;
 use embassy_futures::select::{select, select4, Either, Either4};
 use embassy_nrf::{
@@ -39,7 +40,6 @@ use nrf_softdevice::{
     raw, temperature_celsius, Flash, Softdevice,
 };
 use static_cell::StaticCell;
-use embassy_boot_nrf::FirmwareUpdater;
 
 mod accelerometer;
 use accelerometer::*;
