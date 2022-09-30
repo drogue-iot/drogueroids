@@ -1,0 +1,39 @@
+<script>
+    // don't forget to call is in the footer section and to include demo.js too
+    function initDemo() {
+        let state = false;
+        let demo = null;
+
+        function check(currentSlide) {
+            const isDemo = currentSlide.dataset.state === "demo";
+            if (isDemo !== state) {
+                state = isDemo;
+                if (state) {
+                    demo = new Demo(document.getElementById("demo"));
+                } else {
+                    demo?.dispose();
+                }
+            }
+        }
+
+        Reveal.on("slidechanged", (event) => check(event.currentSlide));
+        // also check now
+        check(Reveal.getCurrentSlide());
+    }
+</script>
+
+<div id="demo" style="
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: var(--slide-width);
+  height: var(--slide-height);
+  border: none;
+  background: navy;
+"
+></div>
+
+<span style="z-index: 100; position: relative;">
+<span data-ble="temperature">??</span> °C
+</span>
+

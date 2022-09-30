@@ -7,6 +7,14 @@
 :highlightjs-languages: rust
 :revealjs_history: true
 
+[state=demo]
+[%notitle]
+== WIP
+
+++++
+include::demo.html[]
+++++
+
 == Who are we?
 
 * Ulf Lilleengen (@lulf)

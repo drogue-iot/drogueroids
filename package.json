@@ -2,10 +2,10 @@
   "name": "eclipsecon-2022-rust-embedded",
   "version": "1.0.0",
   "description": "EclipseCon 2022 Talk - Rust Embedded",
-  "main": "talk.adoc",
+  "main": "index.adoc",
   "scripts": {
     "build": "node build.js",
-    "stage": "rm -Rf staging && mkdir staging && cp index.html staging/ && cp -a plugins/ node_modules/ staging/",
+    "stage": "rm -Rf staging && mkdir staging && cp index.html staging/ && cp -a images/ plugins/ node_modules/ staging/",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
