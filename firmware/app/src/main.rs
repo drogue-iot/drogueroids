@@ -289,7 +289,6 @@ pub async fn gatt_server_task(
             Either4::Second(_) => {
                 let value: i8 = temperature_celsius(sd).unwrap().to_num();
                 defmt::info!("Measured temperature: {}℃", value);
-                let value = value as i16 * 10;
                 // Convert to fahrenheit
                 let value = ((value as f32 * 9.0 / 5.0) + 32.0) as i16;
 
