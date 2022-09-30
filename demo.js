@@ -31,24 +31,20 @@ class DemoScene extends Phaser.Scene {
 
         this.cursors = this.input.keyboard.createCursorKeys();
 
-        this.#ship = this.physics.add.image(300, 300, 'ship');
+        const sx = this.physics.world.bounds.width / 2;
+        const sy = this.physics.world.bounds.height - 200;
+
+        this.#ship = this.physics.add.image(sx, sy, 'ship');
         this.#ship.scaleX = 4;
         this.#ship.scaleY = 4;
+        this.#ship.body.drag.x = 100;
 
         this.#ble.externalizeEvents = {
-            onButton: (button) => {
-                console.log("Button", button);
-                if (button === "a") {
-                    this.#move -= 1;
-                } else {
-                    this.#move += 1;
-                }
-                console.log("Move", this.#move);
-            }
+            onButton: (button) => this.#onButton(button),
         };
 
         this.time.addEvent({
-            delay: 2000,
+            delay: 1000,
             loop: true,
             callback: () => {
                 this.checkSpawn();
@@ -57,7 +53,7 @@ class DemoScene extends Phaser.Scene {
     }
 
     spawn() {
-        let start = this.physics.world.bounds.width / 2 + ((Math.random() - 0.5) * this.physics.world.bounds.width / 4);
+        let start = this.physics.world.bounds.width * Math.random();
         const target = this.physics.add.image(start, 0, 'ufo');
         target.scaleX = 4;
         target.scaleY = 4;
@@ -77,7 +73,7 @@ class DemoScene extends Phaser.Scene {
     checkSpawn() {
         console.log("Check spawn", this.#targets.length);
         if (this.#targets.length < this.maxTargets) {
-            if (Math.random() < 0.05) {
+            if (Math.random() < 0.75) {
                 this.spawn();
             }
         }
@@ -90,19 +86,16 @@ class DemoScene extends Phaser.Scene {
         target.gameObject.destroy();
     }
 
-    update() {
-
-        this.checkSpawn();
-
-        this.#ship.setVelocity(0);
-
-        if (this.#move < 0) {
-            this.#ship.setAngle(-90).setVelocityX(-200);
-        } else if (this.#move > 0) {
-            this.#ship.setAngle(90).setVelocityX(200);
+    #onButton(button) {
+        console.log("Button", button);
+        if (button === "a") {
+            this.#ship.setVelocityX(-200);
         } else {
-            this.#ship.setAngle(0).setVelocityX(0);
+            this.#ship.setVelocityX(200);
         }
+    }
+
+    update() {
 
         if (this.cursors.left.isDown) {
             this.#ship.setAngle(-90).setVelocityX(-200);

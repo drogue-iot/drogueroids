@@ -55,7 +55,7 @@ class BlePluginInstance {
             optionalServices: [
                 ENV_SERVICE,
                 BUTTONS_SERVICE,
-	        DFU_SERVICE
+                DFU_SERVICE
             ],
         })
             .then((device) => {
