@@ -292,6 +292,8 @@ pub async fn gatt_server_task(
                 let value: i8 = temperature_celsius(sd).unwrap().to_num();
                 defmt::info!("Measured temperature: {}℃", value);
                 let value = value as i16 * 10;
+                // Convert to fahrenheit
+                let value = ((value as f32 * 9.0 / 5.0) + 32.0) as i16;
 
                 env_service.temperature_set(value).unwrap();
                 if notify_temp {
