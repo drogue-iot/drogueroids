@@ -12,7 +12,7 @@ use drogue_device::{
         dfu::{FirmwareGattService, FirmwareService, FirmwareServiceEvent},
         environment::*,
     },
-    firmware::{FirmwareManager, SharedFirmwareManager},
+    firmware::FirmwareManager,
     shared::Shared,
     Board,
 };
@@ -126,14 +126,12 @@ async fn main(s: Spawner) {
     static EVENTS: Channel<ThreadModeRawMutex, FirmwareServiceEvent, 10> = Channel::new();
     // The updater is the 'application' part of the bootloader that knows where bootloader
     // settings and the firmware update partition is located based on memory.x linker script.
-    static DFU: Shared<FirmwareManager<Flash, 4096, 64>> = Shared::new();
-    let dfu = DFU.initialize(FirmwareManager::new(
+    let dfu = FirmwareManager::new(
         Flash::take(sd),
         FirmwareUpdater::default(),
         version.as_bytes(),
-    ));
-    let updater =
-        FirmwareGattService::new(&server.firmware, dfu.clone(), version.as_bytes(), 64).unwrap();
+    );
+    let updater = FirmwareGattService::new(&server.firmware, dfu, version.as_bytes(), 64).unwrap();
     s.spawn(updater_task(updater, EVENTS.receiver().into()))
         .unwrap();
 
@@ -218,7 +216,7 @@ pub struct AccelService {
 
 #[embassy_executor::task]
 pub async fn updater_task(
-    mut dfu: FirmwareGattService<'static, SharedFirmwareManager<'static, Flash, 4096, 64>>,
+    mut dfu: FirmwareGattService<'static, FirmwareManager<Flash, 4096, 64>>,
     events: DynamicReceiver<'static, FirmwareServiceEvent>,
 ) {
     loop {
