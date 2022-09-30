@@ -47,7 +47,16 @@ probe-rs-cli download s113_nrf52_7.3.0_softdevice.hex --chip nRF52833_xxAA --for
 cargo flash --manifest-path ../bootloader/Cargo.toml --release --chip nRF52833_xxAA
 ----
 
-=== Flash application with `dfu` flag enabled
+=== Flash application for debugging
+
+[source]
+----
+DEFMT_LOG=info cargo run --release --no-default-features --features debug
+----
+
+When started, the device will blink the letter 'A' on the LED matrix.
+
+=== Flash application for headless use
 
 [source]
 ----
