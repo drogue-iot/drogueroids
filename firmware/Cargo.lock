@@ -1229,6 +1229,7 @@ dependencies = [
  "embedded-hal-async",
  "futures",
  "heapless",
+ "lsm303agr",
  "microbit-bsp",
  "nrf-softdevice",
  "nrf-softdevice-s113",

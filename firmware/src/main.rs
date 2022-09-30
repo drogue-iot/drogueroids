@@ -1,8 +1,8 @@
 #![no_std]
 #![no_main]
 #![macro_use]
-#![feature(generic_associated_types)]
 #![feature(type_alias_impl_trait)]
+#![feature(generic_associated_types)]
 #![allow(unused_imports)]
 #![allow(unused_variables)]
 
@@ -17,7 +17,7 @@ use drogue_device::{
     Board,
 };
 use embassy_executor::Spawner;
-use embassy_futures::select::{select, select3, Either, Either3};
+use embassy_futures::select::{select, select4, Either, Either4};
 use embassy_nrf::{
     buffered_uarte::{BufferedUarte, State},
     config::Config,
@@ -39,8 +39,10 @@ use nrf_softdevice::{
     raw, temperature_celsius, Flash, Softdevice,
 };
 use static_cell::StaticCell;
-
 use embassy_boot_nrf::FirmwareUpdater;
+
+mod accelerometer;
+use accelerometer::*;
 
 #[cfg(feature = "panic-probe")]
 use panic_probe as _;
@@ -100,13 +102,25 @@ async fn main(s: Spawner) {
 
     s.spawn(softdevice_task(sd)).unwrap();
 
-    static BUTTONS: Channel<ThreadModeRawMutex, [u32; 2], 10> = Channel::new();
+    // Buttons notifier task
+    static BUTTONS: Channel<ThreadModeRawMutex, [u32; 2], 1> = Channel::new();
     s.spawn(button_watcher(
         board.btn_a,
         board.btn_b,
         BUTTONS.sender().into(),
     ))
     .unwrap();
+
+    // Accelerometer notifier task
+    let xl = Accelerometer::new(
+        board.twispi0,
+        interrupt::take!(SPIM0_SPIS0_TWIM0_TWIS0_SPI0_TWI0),
+        board.p23,
+        board.p22,
+    )
+    .unwrap();
+    static XL_CHAN: Channel<ThreadModeRawMutex, Measurement, 1> = Channel::new();
+    s.spawn(xl_watcher(xl, XL_CHAN.sender().into())).unwrap();
 
     // Firmware update service event channel and task
     static EVENTS: Channel<ThreadModeRawMutex, FirmwareServiceEvent, 10> = Channel::new();
@@ -134,6 +148,7 @@ async fn main(s: Spawner) {
         server,
         EVENTS.sender().into(),
         BUTTONS.receiver().into(),
+        XL_CHAN.receiver().into(),
         "Drogue Presenter",
     ))
     .unwrap();
@@ -144,6 +159,16 @@ async fn main(s: Spawner) {
     loop {
         let _ = display.display('A'.into(), Duration::from_secs(1)).await;
         Timer::after(Duration::from_secs(1)).await;
+    }
+}
+
+#[embassy_executor::task]
+pub async fn xl_watcher(
+    mut xl: Accelerometer<'static>,
+    sender: DynamicSender<'static, Measurement>,
+) {
+    loop {
+        let _ = xl.run(AccelOutputDataRate::Hz10, sender).await;
     }
 }
 
@@ -176,12 +201,19 @@ pub struct GattServer {
     pub env: EnvironmentSensingService,
     pub device_info: DeviceInformationService,
     pub buttons: ButtonsService,
+    pub accel: AccelService,
 }
 
 #[nrf_softdevice::gatt_service(uuid = "b44fabf6-35b2-11ed-883f-d45d6455d2cc")]
 pub struct ButtonsService {
     #[characteristic(uuid = "b4ad9022-35b2-11ed-a76a-d45d6455d2cc", read, notify)]
     pub presses: [u8; 2],
+}
+
+#[nrf_softdevice::gatt_service(uuid = "A2C21BA5-A2FA-455B-8E02-BCFCA3E2ED64")]
+pub struct AccelService {
+    #[characteristic(uuid = "BA080C41-B7E0-4A4A-9BFD-98A7C4C87DEB", read, notify)]
+    pub data: [u8; 12],
 }
 
 #[embassy_executor::task]
@@ -204,21 +236,24 @@ pub async fn gatt_server_task(
     server: &'static GattServer,
     events: DynamicSender<'static, FirmwareServiceEvent>,
     buttons: DynamicReceiver<'static, [u32; 2]>,
+    xl: DynamicReceiver<'static, Measurement>,
 ) {
     defmt::info!("Started gatt server for connection");
     let mut notify_buttons = false;
-    let mut notify = false;
+    let mut notify_temp = false;
+    let mut notify_xl = false;
     let mut ticker = Ticker::every(Duration::from_secs(5));
     let env_service = &server.env;
     let buttons_service = &server.buttons;
+    let accel_service = &server.accel;
     loop {
         let mut interval = None;
         let next = ticker.next();
-        match select3(
+        match select4(
             gatt_server::run(&conn, server, |e| match e {
                 GattServerEvent::Env(e) => match e {
                     EnvironmentSensingServiceEvent::TemperatureCccdWrite { notifications } => {
-                        notify = notifications;
+                        notify_temp = notifications;
                     }
                     EnvironmentSensingServiceEvent::PeriodWrite(period) => {
                         defmt::info!("Setting interval to {} seconds", period);
@@ -234,34 +269,48 @@ pub async fn gatt_server_task(
                         notify_buttons = notifications;
                     }
                 },
+                GattServerEvent::Accel(e) => match e {
+                    AccelServiceEvent::DataCccdWrite { notifications } => {
+                        notify_xl = notifications;
+                    }
+                },
                 _ => {}
             }),
             next,
             buttons.recv(),
+            xl.recv(),
         )
         .await
         {
-            Either3::First(res) => {
+            Either4::First(res) => {
                 if let Err(e) = res {
                     defmt::warn!("gatt_server run exited with error: {:?}", e);
                     return;
                 }
             }
-            Either3::Second(_) => {
+            Either4::Second(_) => {
                 let value: i8 = temperature_celsius(sd).unwrap().to_num();
                 defmt::info!("Measured temperature: {}℃", value);
                 let value = value as i16 * 10;
 
                 env_service.temperature_set(value).unwrap();
-                if notify {
-                    defmt::trace!("Notifying");
+                if notify_temp {
                     env_service.temperature_notify(&conn, value).unwrap();
                 }
             }
-            Either3::Third(presses) => {
+            Either4::Third(presses) => {
                 if notify_buttons {
                     let presses = [presses[0] as u8, presses[1] as u8];
                     buttons_service.presses_notify(&conn, presses).unwrap();
+                }
+            }
+            Either4::Fourth(data) => {
+                if notify_xl {
+                    let mut d: [u8; 12] = [0; 12];
+                    d[0..4].copy_from_slice(&data.x.to_le_bytes()[..]);
+                    d[4..8].copy_from_slice(&data.y.to_le_bytes()[..]);
+                    d[8..12].copy_from_slice(&data.z.to_le_bytes()[..]);
+                    accel_service.data_notify(&conn, d).unwrap();
                 }
             }
         }
@@ -279,6 +328,7 @@ pub async fn advertiser_task(
     server: &'static GattServer,
     events: DynamicSender<'static, FirmwareServiceEvent>,
     buttons: DynamicReceiver<'static, [u32; 2]>,
+    xl: DynamicReceiver<'static, Measurement>,
     name: &'static str,
 ) {
     let mut adv_data: Vec<u8, 31> = Vec::new();
@@ -313,6 +363,7 @@ pub async fn advertiser_task(
             server,
             events.clone(),
             buttons.clone(),
+            xl.clone(),
         )) {
             defmt::warn!("Error spawning gatt task: {:?}", e);
         }

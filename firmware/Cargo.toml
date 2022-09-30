@@ -20,6 +20,7 @@ static_cell = "1"
 
 drogue-device = { version = "0.1.0", default-features = false, features = ["time", "ble+nrf52833", "ble+nrf-softdevice-s113", "dfu"] }
 microbit-bsp = { version = "0.1.0" }
+lsm303agr = "0.2.2"
 
 embassy-boot-nrf = { version = "0.1.0", default-features = false, features = ["softdevice"] }
 embassy-executor = { version = "0.1.0", default-features = false, features = ["integrated-timers"] }
