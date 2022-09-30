@@ -215,9 +215,16 @@ image:images/no_std.png[Bare metal Rust]
 * not having "std" is often named "no_std"
 --
 
+[.left]
 === Embassy
 
-An executor for embedded Rust, supporting `no_std`.
+EMBedded ASYnc
+
+* An executor for embedded Rust, supporting `no_std`.
+* Async synchronization primitives, time keeping
+* HALs for nRF, STM32 and RP2040
+* Bootloader
+* USB, TCP/IP, LoRa and BLE
 
 [.notes]
 --
@@ -233,7 +240,7 @@ An executor for embedded Rust, supporting `no_std`.
 Embassy can be combined with other async Rust components.
 --
 
-* Embedded HALs
+* Drivers from crates.io
 * Ector
 * Drogue Device
 * …
@@ -241,13 +248,12 @@ Embassy can be combined with other async Rust components.
 [.text-left]
 === Ector
 
-An actor based application framework.
-
+An actor framework.
 
 [.text-left]
 === Drogue Device
 
-Bringing all components together: Bootloader, Embassy, HALs, Ector, Drivers, OTA, …
+Distribution of Embassy focused on a few boards supporting IoT, OTA updates.
 
 === Why RTOS?
 
