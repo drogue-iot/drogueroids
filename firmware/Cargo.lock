@@ -263,6 +263,7 @@ checksum = "70858629a458fdfd39f9675c4dc309411f2a3f83bede76988d81bf1a0ecee9e0"
 dependencies = [
  "bare-metal 0.2.5",
  "bitfield",
+ "critical-section 1.1.1",
  "embedded-hal 0.2.7",
  "volatile-register",
 ]
@@ -1235,6 +1236,24 @@ dependencies = [
  "nrf-softdevice-s113",
  "panic-probe",
  "panic-reset",
+ "static_cell",
+]
+
+[[package]]
+name = "microbit-bootloader"
+version = "0.1.0"
+dependencies = [
+ "cfg-if",
+ "cortex-m",
+ "cortex-m-rt",
+ "defmt",
+ "defmt-rtt",
+ "embassy-boot",
+ "embassy-boot-nrf",
+ "embassy-nrf",
+ "embedded-storage",
+ "embedded-storage-async",
+ "nrf-softdevice-mbr",
  "static_cell",
 ]
 
