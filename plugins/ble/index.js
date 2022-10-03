@@ -146,7 +146,7 @@ class BlePluginInstance {
             return null;
         }
 
-        return value.getUint16(0, true) / 10;
+        return value.getUint16(0, true);
     }
 
     get presses() {
