@@ -46,8 +46,11 @@ nrf-softdevice-s113 = { git = "https://github.com/embassy-rs/nrf-softdevice.git"
 nrf-softdevice-macro = { git = "https://github.com/embassy-rs/nrf-softdevice.git", rev = "11c2728235bef45ba34b735e3975344e2641f0b9" }
 embassy-sync = { git = "https://github.com/embassy-rs/embassy.git", rev = "11da25800bce338e39082e9d35b1af8db3e5875d" }
 embassy-time = { git = "https://github.com/embassy-rs/embassy.git", rev = "11da25800bce338e39082e9d35b1af8db3e5875d" }
-drogue-device = { git = "https://github.com/drogue-iot/drogue-device.git", rev = "3b4f5fc96d916c691dcde9fbaa655a6d722ca35c" }
-microbit-bsp = { git = "https://github.com/drogue-iot/drogue-device.git", rev = "3b4f5fc96d916c691dcde9fbaa655a6d722ca35c" }
+drogue-device = { git = "https://github.com/drogue-iot/drogue-device.git", rev = "d8a6791436030608d95f458e68ae63fd13cfccc0" }
+microbit-bsp = { git = "https://github.com/drogue-iot/drogue-device.git", rev = "d8a6791436030608d95f458e68ae63fd13cfccc0" }
+
+#drogue-device = { path = "../../drogue-iot/drogue-device/device" }
+#microbit-bsp = { path = "../../drogue-iot/drogue-device/boards/microbit" }
 
 #embassy-executor = { path = "../../../../../../embassy/embassy" }
 #embassy-nrf = { path = "../../../../../../embassy/embassy-nrf" }

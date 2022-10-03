@@ -34,7 +34,10 @@ use embassy_sync::{
 use embassy_time::{Delay, Duration, Ticker, Timer};
 use futures::StreamExt;
 use heapless::Vec;
-use microbit_bsp::*;
+use microbit_bsp::{
+    display::{fonts::frame_5x5, Brightness, Frame},
+    *,
+};
 use nrf_softdevice::{
     ble::{gatt_server, peripheral, Connection},
     raw, temperature_celsius, Flash, Softdevice,
@@ -144,20 +147,13 @@ async fn main(s: Spawner) {
         s,
         sd,
         server,
+        board.display,
         EVENTS.sender().into(),
         BUTTONS.receiver().into(),
         XL_CHAN.receiver().into(),
         "Drogue Presenter",
     ))
     .unwrap();
-
-    // Finally, a blinker application.
-    let mut display = board.display;
-    display.set_brightness(display::Brightness::MAX);
-    loop {
-        let _ = display.display('A'.into(), Duration::from_secs(1)).await;
-        Timer::after(Duration::from_secs(1)).await;
-    }
 }
 
 #[embassy_executor::task]
@@ -216,7 +212,7 @@ pub struct AccelService {
 
 #[embassy_executor::task]
 pub async fn updater_task(
-    mut dfu: FirmwareGattService<'static, FirmwareManager<Flash, 4096, 64>>,
+    mut dfu: FirmwareGattService<'static, FirmwareManager<Flash, 4096, 4, 64>>,
     events: DynamicReceiver<'static, FirmwareServiceEvent>,
 ) {
     loop {
@@ -287,7 +283,7 @@ pub async fn gatt_server_task(
                 }
             }
             Either4::Second(_) => {
-                let value: i8 = temperature_celsius(sd).unwrap().to_num();
+                let value: i16 = temperature_celsius(sd).unwrap().to_num::<i8>() as i16;
                 defmt::info!("Measured temperature: {}℃", value);
                 // Convert to fahrenheit
                 let value = ((value as f32 * 9.0 / 5.0) + 32.0) as i16;
@@ -325,6 +321,7 @@ pub async fn advertiser_task(
     spawner: Spawner,
     sd: &'static Softdevice,
     server: &'static GattServer,
+    mut display: LedMatrix,
     events: DynamicSender<'static, FirmwareServiceEvent>,
     buttons: DynamicReceiver<'static, [u32; 2]>,
     xl: DynamicReceiver<'static, Measurement>,
@@ -344,6 +341,7 @@ pub async fn advertiser_task(
         0x03, 0x03, 0x0A, 0x18,
     ];
 
+    display.set_brightness(Brightness::MAX);
     loop {
         let config = peripheral::Config::default();
         let adv = peripheral::ConnectableAdvertisement::ScannableUndirected {
@@ -354,6 +352,9 @@ pub async fn advertiser_task(
         let conn = peripheral::advertise_connectable(sd, adv, &config)
             .await
             .unwrap();
+
+        const TICK: Frame<5, 5> = frame_5x5(&[0b00000, 0b00001, 0b00010, 0b10100, 0b01000]);
+        display.display(TICK, Duration::from_secs(1)).await;
 
         defmt::debug!("connection established");
         if let Err(e) = spawner.spawn(gatt_server_task(
