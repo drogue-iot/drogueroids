@@ -71,7 +71,7 @@ One change you can do is to set the REVISION environment variable, which will ad
 
 [source]
 ----
-REVISION=myupdate cargo objcopy --features dfu --release -- -O binary update.bin
+REVISION=myupdate cargo objcopy --release -- -O binary update.bin
 ----
 
 Modifying the version in `Cargo.toml` or passing a `REVISION` environment variable will compile the firmware with a new version identifier. This identifier can be used to decide if a firmware update is needed at all by the `drgdfu`.
