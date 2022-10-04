@@ -14,9 +14,13 @@ class Bullet extends Phaser.Physics.Arcade.Image {
 
     preUpdate(time, delta) {
         if (this.y <= -32) {
-            this.setActive(false);
-            this.setVisible(false);
+            this.kill();
         }
+    }
+
+    kill() {
+        this.setActive(false);
+        this.setVisible(false);
     }
 }
 
@@ -49,10 +53,14 @@ class Target extends Phaser.Physics.Arcade.Image {
 
     preUpdate(time, delta) {
         if (this.y >= this.scene.physics.world.bounds.height) {
-            this.setActive(false);
-            this.setVisible(false);
-            this.destroy();
+            this.kill();
         }
+    }
+
+    kill() {
+        this.setActive(false);
+        this.setVisible(false);
+        this.destroy();
     }
 }
 
@@ -107,6 +115,14 @@ class DemoScene extends Phaser.Scene {
 
         this.bullets = new Bullets(this);
         this.targets = new Targets(this);
+        this.physics.add.collider(
+            this.bullets,
+            this.targets,
+            (bullet, target) => {
+                bullet.kill();
+                target.kill();
+            },
+        )
 
         this.time.addEvent({
             delay: 1000,
@@ -132,7 +148,7 @@ class DemoScene extends Phaser.Scene {
 
     checkSpawn() {
         const num = this.targets.getLength();
-        console.log("Check spawn", num);
+        //console.debug("Check spawn", num);
         if (num < this.maxTargets) {
             if (Math.random() < 0.75) {
                 this.spawn();
