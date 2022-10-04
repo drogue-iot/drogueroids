@@ -1,3 +1,32 @@
+class Points {
+
+    hits;
+    bugs;
+    #label;
+
+    constructor(scene) {
+        this.hits = 0;
+        this.bugs = 0;
+        this.#label = scene.add.bitmapText(20, scene.physics.world.bounds.height - 120, "font", "");
+        this.#updateLabel();
+    }
+
+    addHit() {
+        this.hits += 1;
+        this.#updateLabel();
+    }
+
+    addBugs(inc) {
+        this.bugs += inc;
+        this.#updateLabel();
+    }
+
+    #updateLabel() {
+        this.#label.setText(`Bugs: ${this.bugs} Hits: ${this.hits}`);
+    }
+
+}
+
 class Bullet extends Phaser.Physics.Arcade.Image {
     constructor(scene, x, y, texture) {
         super(scene, x, y, texture);
@@ -47,6 +76,8 @@ class Bullets extends Phaser.Physics.Arcade.Group {
 }
 
 class Target extends Phaser.Physics.Arcade.Image {
+    points;
+
     constructor(scene, x, y, texture) {
         super(scene, x, y, texture);
     }
@@ -54,6 +85,7 @@ class Target extends Phaser.Physics.Arcade.Image {
     preUpdate(time, delta) {
         if (this.y >= this.scene.physics.world.bounds.height) {
             this.kill();
+            this.points.addBugs(1);
         }
     }
 
@@ -65,13 +97,17 @@ class Target extends Phaser.Physics.Arcade.Image {
 }
 
 class Targets extends Phaser.Physics.Arcade.Group {
-    constructor(scene) {
+    #points;
+
+    constructor(scene, points) {
         super(scene.physics.world, scene);
+        this.#points = points;
         this.classType = Target;
     }
 
     spawn(x, y) {
         const target = this.create(x, y, "ufo");
+        target.points = this.#points;
         target.scaleX = 4;
         target.scaleY = 4;
         target.setVelocityY(200);
@@ -90,11 +126,12 @@ class DemoScene extends Phaser.Scene {
     }
 
     preload() {
-        this.load.setBaseURL('https://labs.phaser.io');
-        //this.load.image('sky', 'assets/skies/space3.png');
-        this.load.image('ship', 'assets/sprites/fmship.png');
-        this.load.image('ufo', 'assets/sprites/ufo.png');
-        this.load.image('bullet', 'assets/sprites/crate32.png');
+        this.load.setBaseURL("https://labs.phaser.io");
+        //this.load.image('sky', "assets/skies/space3.png");
+        this.load.image("ship", "assets/sprites/fmship.png");
+        this.load.image("ufo", "assets/sprites/ufo.png");
+        this.load.image("bullet", "assets/sprites/crate32.png");
+        this.load.bitmapFont("font", "assets/fonts/bitmap/carrier_command.png", "assets/fonts/bitmap/carrier_command.xml")
     }
 
     create() {
@@ -104,7 +141,7 @@ class DemoScene extends Phaser.Scene {
         const sx = this.physics.world.bounds.width / 2;
         const sy = this.physics.world.bounds.height - 200;
 
-        this.#ship = this.physics.add.image(sx, sy, 'ship');
+        this.#ship = this.physics.add.image(sx, sy, "ship");
         this.#ship.scaleX = 4;
         this.#ship.scaleY = 4;
         this.#ship.setCollideWorldBounds(true);
@@ -113,15 +150,33 @@ class DemoScene extends Phaser.Scene {
             onButton: (button) => this.#onButton(button),
         };
 
+        this.points = new Points(this);
+
         this.bullets = new Bullets(this);
-        this.targets = new Targets(this);
+        this.targets = new Targets(this, this.points);
         this.physics.add.collider(
             this.bullets,
             this.targets,
             (bullet, target) => {
                 bullet.kill();
                 target.kill();
+                this.points.addHit();
             },
+        );
+        this.physics.add.collider(
+            this.#ship,
+            this.targets,
+            (o1, o2) => {},
+            (o1, o2) => {
+                if (o1 instanceof Target) {
+                    o1.kill();
+                }
+                if (o2 instanceof Target) {
+                    o2.kill();
+                }
+                this.points.addBugs(5);
+                return false;
+            }
         )
 
         this.time.addEvent({
