@@ -42,7 +42,6 @@ class Bullet extends Phaser.Physics.Arcade.Image {
     }
 
     preUpdate(time, delta) {
-        super.preUpdate(time, delta);
         if (this.y <= -32) {
             this.kill();
         }
