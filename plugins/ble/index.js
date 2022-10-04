@@ -21,6 +21,8 @@ const BUTTONS_SERVICE = "b44fabf6-35b2-11ed-883f-d45d6455d2cc";
 const PRESSES_CHAR = "b4ad9022-35b2-11ed-a76a-d45d6455d2cc"
 
 const DFU_SERVICE = "00001000-b0cd-11ec-871f-d45ddf138840";
+const DFU_OFFSET_CHAR = "00001005-b0cd-11ec-871f-d45ddf138840";
+const DFU_VERSION_CHAR = "00001001-b0cd-11ec-871f-d45ddf138840";
 
 const ACCEL_SERVICE = "a2c21ba5-a2fa-455b-8e02-bcfca3e2ed64";
 const DATA_CHAR = "ba080c41-b7e0-4a4a-9bfd-98a7c4c87deb";
@@ -146,6 +148,42 @@ class BlePluginInstance {
                                             })
                                     })
                             })
+                            .then((state) => {
+                                return server.getPrimaryService(DFU_SERVICE)
+                                    .then((service) => {
+                                        return service.getCharacteristic(DFU_VERSION_CHAR)
+                                            .then((c) => {
+                                                    return {
+                                                        ...state, ...{
+                                                            dfu: {
+                                                                service,
+                                                                characteristics: {
+                                                                    version: c,
+                                                                }
+                                                            }
+                                                        }
+                                                    };
+                                            });
+                                        /*
+                                        var s2 = service.getCharacteristic(DFU_OFFSET_CHAR)
+                                            .then((c) => {
+                                                return {
+                                                    ...state, ...{
+                                                        dfu: {
+                                                            service,
+                                                            characteristics: {
+                                                                offset: c,
+                                                            }
+                                                        }
+                                                    }
+                                                };
+                                            });
+                                        return {
+                                            ...s1,
+                                            ...s2
+                                        };*/
+                                    })
+                            })
                     })
             })
             .then((state) => this.#setState(state));
@@ -239,6 +277,13 @@ class BlePluginInstance {
                     element.innerText = JSON.stringify(this.acceleration);
                     break;
                 }
+                case "firmware": {
+                    // noinspection JSPrimitiveTypeWrapperUsage
+                    this.firmware.then((v) => {
+                        element.innerText = "Version: " + v;
+                    });
+                    break;
+                }
             }
         }
     }
@@ -254,6 +299,18 @@ class BlePluginInstance {
             y: value.getInt32(4, true),
             z: value.getInt32(8, true),
         };
+    }
+
+    get firmware() {
+        return this.#state?.dfu?.characteristics?.version?.readValue().then((value) => {
+            if (!(value instanceof DataView)) {
+                return null;
+            }
+
+            var dec = new TextDecoder("utf-8");
+            var version = dec.decode(value.buffer);
+            return version;
+        });
     }
 
     get temperature() {
