@@ -1,12 +1,80 @@
+class Bullet extends Phaser.Physics.Arcade.Image {
+    constructor(scene, x, y, texture) {
+        super(scene, x, y, texture);
+    }
+
+    fire(x, y) {
+        this.body.reset(x, y);
+
+        this.setActive(true);
+        this.setVisible(true);
+
+        this.setVelocityY(-300);
+    }
+
+    preUpdate(time, delta) {
+        if (this.y <= -32) {
+            this.setActive(false);
+            this.setVisible(false);
+        }
+    }
+}
+
+class Bullets extends Phaser.Physics.Arcade.Group {
+    constructor(scene) {
+        super(scene.physics.world, scene);
+
+        this.createMultiple({
+            frameQuantity: 5,
+            key: 'bullet',
+            active: false,
+            visible: false,
+            classType: Bullet
+        });
+    }
+
+    fireBullet(x, y) {
+        let bullet = this.getFirstDead(false);
+
+        if (bullet) {
+            bullet.fire(x, y);
+        }
+    }
+}
+
+class Target extends Phaser.Physics.Arcade.Image {
+    constructor(scene, x, y, texture) {
+        super(scene, x, y, texture);
+    }
+
+    preUpdate(time, delta) {
+        if (this.y >= this.scene.physics.world.bounds.height) {
+            this.setActive(false);
+            this.setVisible(false);
+            this.destroy();
+        }
+    }
+}
+
+class Targets extends Phaser.Physics.Arcade.Group {
+    constructor(scene) {
+        super(scene.physics.world, scene);
+        this.classType = Target;
+    }
+
+    spawn(x, y) {
+        const target = this.create(x, y, "ufo");
+        target.scaleX = 4;
+        target.scaleY = 4;
+        target.setVelocityY(200);
+    }
+}
+
 class DemoScene extends Phaser.Scene {
     #ship;
     #ble;
-    #move = 0;
-    #targets = [];
 
     maxTargets = 4;
-
-    #counter = 0;
 
     constructor(ble) {
         super();
@@ -18,18 +86,12 @@ class DemoScene extends Phaser.Scene {
         //this.load.image('sky', 'assets/skies/space3.png');
         this.load.image('ship', 'assets/sprites/fmship.png');
         this.load.image('ufo', 'assets/sprites/ufo.png');
+        this.load.image('bullet', 'assets/sprites/crate32.png');
     }
 
     create() {
-        //this.cameras.main.setBounds(0, 0, 1024, 2048);
-
-        this.physics.world.setBoundsCollision(false, false, false, true);
-        this.physics.world.on("worldbounds", (body) => {
-            console.log("worldbounds", body);
-            this.removeTarget(body);
-        });
-
-        this.cursors = this.input.keyboard.createCursorKeys();
+        //this.physics.world.setBounds(0, 0, 400, 300);
+        this.physics.world.setBoundsCollision(true, true, true, true);
 
         const sx = this.physics.world.bounds.width / 2;
         const sy = this.physics.world.bounds.height - 200;
@@ -37,11 +99,14 @@ class DemoScene extends Phaser.Scene {
         this.#ship = this.physics.add.image(sx, sy, 'ship');
         this.#ship.scaleX = 4;
         this.#ship.scaleY = 4;
-        this.#ship.body.drag.x = 100;
+        this.#ship.setCollideWorldBounds(true);
 
         this.#ble.externalizeEvents = {
             onButton: (button) => this.#onButton(button),
         };
+
+        this.bullets = new Bullets(this);
+        this.targets = new Targets(this);
 
         this.time.addEvent({
             delay: 1000,
@@ -52,61 +117,41 @@ class DemoScene extends Phaser.Scene {
         })
     }
 
+    fire() {
+        const sx = this.#ship.body.x + this.#ship.body.width / 2;
+        const sy = this.#ship.body.y;
+
+        this.bullets.fireBullet(sx, sy);
+    }
+
     spawn() {
-        let start = this.physics.world.bounds.width * Math.random();
-        const target = this.physics.add.image(start, 0, 'ufo');
-        target.scaleX = 4;
-        target.scaleY = 4;
-        target.setVelocityY(200);
+        let start = this.physics.world.bounds.width * Math.random() * 0.8;
 
-        target.setCollideWorldBounds(true);
-        target.body.onWorldBounds = true;
-
-        target.id = this.#counter;
-        this.#counter += 1;
-
-        console.log("Spawned", target);
-
-        this.#targets.push(target);
+        this.targets.spawn(start, 100);
     }
 
     checkSpawn() {
-        console.log("Check spawn", this.#targets.length);
-        if (this.#targets.length < this.maxTargets) {
+        const num = this.targets.getLength();
+        console.log("Check spawn", num);
+        if (num < this.maxTargets) {
             if (Math.random() < 0.75) {
                 this.spawn();
             }
         }
     }
 
-    removeTarget(target) {
-        this.#targets = this.#targets.filter((ele)=> {
-            return ele.id !== target.gameObject.id;
-        });
-        target.gameObject.destroy();
-    }
-
     #onButton(button) {
-        console.log("Button", button);
         if (button === "a") {
-            this.#ship.setVelocityX(-200);
-        } else {
-            this.#ship.setVelocityX(200);
+            this.fire();
         }
     }
 
     update() {
 
-        if (this.cursors.left.isDown) {
-            this.#ship.setAngle(-90).setVelocityX(-200);
-        } else if (this.cursors.right.isDown) {
-            this.#ship.setAngle(90).setVelocityX(200);
-        }
+        const a = this.#ble.acceleration;
 
-        if (this.cursors.up.isDown) {
-            this.#ship.setAngle(0).setVelocityY(-200);
-        } else if (this.cursors.down.isDown) {
-            this.#ship.setAngle(-180).setVelocityY(200);
+        if (a !== null) {
+            this.#ship.setVelocityX(a.x / 2.0);
         }
     }
 }

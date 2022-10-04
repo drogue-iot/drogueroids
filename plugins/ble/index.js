@@ -22,6 +22,9 @@ const PRESSES_CHAR = "b4ad9022-35b2-11ed-a76a-d45d6455d2cc"
 
 const DFU_SERVICE = "00001000-b0cd-11ec-871f-d45ddf138840";
 
+const ACCEL_SERVICE = "a2c21ba5-a2fa-455b-8e02-bcfca3e2ed64";
+const DATA_CHAR = "ba080c41-b7e0-4a4a-9bfd-98a7c4c87deb";
+
 class BlePluginInstance {
 
     #device;
@@ -55,7 +58,8 @@ class BlePluginInstance {
             optionalServices: [
                 ENV_SERVICE,
                 BUTTONS_SERVICE,
-                DFU_SERVICE
+                DFU_SERVICE,
+                ACCEL_SERVICE
             ],
         })
             .then((device) => {
@@ -115,6 +119,26 @@ class BlePluginInstance {
                                                             service,
                                                             characteristics: {
                                                                 presses: c,
+                                                            }
+                                                        }
+                                                    }
+                                                };
+                                            })
+                                    })
+                            })
+                            .then((state) => {
+                                return server.getPrimaryService(ACCEL_SERVICE)
+                                    .then((service) => {
+                                        return service.getCharacteristic(DATA_CHAR)
+                                            .then((c) => c.startNotifications())
+                                            .then((c) => {
+                                                console.log("Subscribed to acceleration");
+                                                return {
+                                                    ...state, ...{
+                                                        acceleration: {
+                                                            service,
+                                                            characteristics: {
+                                                                data: c,
                                                             }
                                                         }
                                                     }
@@ -200,7 +224,7 @@ class BlePluginInstance {
     }
 
     #inject() {
-        console.debug(`State - temp: ${this.temperature}, a: ${this.presses?.a}, b: ${this.presses?.b}`);
+        console.debug(`State - temp: ${this.temperature}, a: ${this.presses?.a}, b: ${this.presses?.b}, accel:`, this.acceleration);
 
         const elements = document.querySelectorAll("[data-ble]");
         for (const element of elements) {
@@ -210,8 +234,26 @@ class BlePluginInstance {
                     element.innerText = this.temperature;
                     break;
                 }
+                case "acceleration": {
+                    // noinspection JSPrimitiveTypeWrapperUsage
+                    element.innerText = JSON.stringify(this.acceleration);
+                    break;
+                }
             }
         }
+    }
+
+    get acceleration() {
+        const value = this.#state?.acceleration?.characteristics?.data?.value;
+        if (!(value instanceof DataView)) {
+            return null;
+        }
+
+        return {
+            x: value.getInt32(0, true),
+            y: value.getInt32(4, true),
+            z: value.getInt32(8, true),
+        };
     }
 
     get temperature() {
@@ -248,7 +290,7 @@ const BlePlugin = {
     init: async (deck) => {
         const instance = new BlePluginInstance();
         instance.onButton = (button) => {
-            console.log("Button pressed:", button);
+            console.debug("Button pressed:", button);
             if (button === "a") {
                 deck.prev();
             } else if (button === "b") {
