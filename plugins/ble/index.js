@@ -293,8 +293,8 @@ class BlePluginInstance {
         const value = this.#state?.buttons?.characteristics?.presses?.value;
         try {
             return {
-                a: value.getUint8(0),
-                b: value.getUint8(1)
+                a: value.getUint16(0, true),
+                b: value.getUint16(2, true)
             };
         } catch (err) {
             return null;

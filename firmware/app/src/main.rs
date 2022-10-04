@@ -106,7 +106,7 @@ async fn main(s: Spawner) {
     s.spawn(softdevice_task(sd)).unwrap();
 
     // Buttons notifier task
-    static BUTTONS: Channel<ThreadModeRawMutex, [u32; 2], 1> = Channel::new();
+    static BUTTONS: Channel<ThreadModeRawMutex, [u16; 2], 1> = Channel::new();
     s.spawn(button_watcher(
         board.btn_a,
         board.btn_b,
@@ -170,9 +170,9 @@ pub async fn xl_watcher(
 pub async fn button_watcher(
     mut a: Button,
     mut b: Button,
-    buttons: DynamicSender<'static, [u32; 2]>,
+    buttons: DynamicSender<'static, [u16; 2]>,
 ) {
-    let mut presses = [0u32; 2];
+    let mut presses = [0u16; 2];
     loop {
         match select(a.wait_for_falling_edge(), b.wait_for_falling_edge()).await {
             Either::First(_) => {
@@ -201,7 +201,7 @@ pub struct GattServer {
 #[nrf_softdevice::gatt_service(uuid = "b44fabf6-35b2-11ed-883f-d45d6455d2cc")]
 pub struct ButtonsService {
     #[characteristic(uuid = "b4ad9022-35b2-11ed-a76a-d45d6455d2cc", read, notify)]
-    pub presses: [u8; 2],
+    pub presses: [u8; 4],
 }
 
 #[nrf_softdevice::gatt_service(uuid = "A2C21BA5-A2FA-455B-8E02-BCFCA3E2ED64")]
@@ -229,7 +229,7 @@ pub async fn gatt_server_task(
     conn: Connection,
     server: &'static GattServer,
     events: DynamicSender<'static, FirmwareServiceEvent>,
-    buttons: DynamicReceiver<'static, [u32; 2]>,
+    buttons: DynamicReceiver<'static, [u16; 2]>,
     xl: DynamicReceiver<'static, Measurement>,
 ) {
     defmt::info!("Started gatt server for connection");
@@ -293,9 +293,11 @@ pub async fn gatt_server_task(
                     env_service.temperature_notify(&conn, value).unwrap();
                 }
             }
-            Either4::Third(presses) => {
+            Either4::Third(p) => {
                 if notify_buttons {
-                    let presses = [presses[0] as u8, presses[1] as u8];
+                    let mut presses = [0u8; 4];
+                    presses[0..2].copy_from_slice(&p[0].to_le_bytes()[..]);
+                    presses[2..4].copy_from_slice(&p[1].to_le_bytes()[..]);
                     buttons_service.presses_notify(&conn, presses).unwrap();
                 }
             }
@@ -323,7 +325,7 @@ pub async fn advertiser_task(
     server: &'static GattServer,
     mut display: LedMatrix,
     events: DynamicSender<'static, FirmwareServiceEvent>,
-    buttons: DynamicReceiver<'static, [u32; 2]>,
+    buttons: DynamicReceiver<'static, [u16; 2]>,
     xl: DynamicReceiver<'static, Measurement>,
     name: &'static str,
 ) {
