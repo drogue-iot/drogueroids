@@ -212,13 +212,13 @@ class BlePluginInstance {
         if (this.#lastPresses.a !== presses.a) {
             // fire A
             this.#lastPresses.a = presses.a;
-            console.info("Pressed A");
+            console.debug("Pressed A");
             this.#fireButtonEvent('a');
         }
         if (this.#lastPresses.b !== presses.b) {
             // fire B
             this.#lastPresses.b = presses.b;
-            console.info("Pressed B");
+            console.debug("Pressed B");
             this.#fireButtonEvent('b');
         }
     }
@@ -232,7 +232,7 @@ class BlePluginInstance {
     }
 
     #inject() {
-        console.log("State - temp:", this.temperature, " a:", this.presses?.a, "b:", this.presses?.b, "accel:", this.acceleration);
+        console.debug("State - temp:", this.temperature, " a:", this.presses?.a, "b:", this.presses?.b, "accel:", this.acceleration);
 
         const elements = document.querySelectorAll("[data-ble]");
         for (const element of elements) {
