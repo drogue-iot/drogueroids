@@ -53,30 +53,34 @@ class BlePluginInstance {
      * @returns {Promise<void>}
      */
     async connect() {
-        await navigator.bluetooth.requestDevice({
-            filters: [
-                {name: "Drogue Presenter"}
-            ],
-            optionalServices: [
-                ENV_SERVICE,
-                BUTTONS_SERVICE,
-                DFU_SERVICE,
-                ACCEL_SERVICE
-            ],
-        })
-            .then((device) => {
-                // only mark active after the user selected a device.
-                this.active = true;
-                console.log("Got device:", device);
-                this.#device = device;
-                device.addEventListener("gattserverdisconnected", () => this.#onDisconnected());
-                return this.#reconnect();
-            })
-            .catch((err) => {
+
+        try {
+            const device = await navigator.bluetooth.requestDevice({
+                filters: [
+                    {name: "Drogue Presenter"}
+                ],
+                optionalServices: [
+                    ENV_SERVICE,
+                    BUTTONS_SERVICE,
+                    DFU_SERVICE,
+                    ACCEL_SERVICE
+                ],
+            });
+            this.active = true;
+            console.log("Got device:", device);
+            this.#device = device;
+            device.addEventListener("gattserverdisconnected", () => this.#onDisconnected());
+
+            try {
+                await this.#reconnect();
+            } catch (err) {
                 console.log("Failed to setup connection", err);
                 this.#onDisconnected(err);
-            })
-        ;
+            }
+        } catch (err) {
+            alert("Failed to choose a device");
+        }
+
     }
 
     disconnect() {
@@ -91,107 +95,73 @@ class BlePluginInstance {
             return;
         }
 
-        return await this.#device.gatt.connect()
-            .then((server) => {
-                console.info("Server connected:", server);
-                return server.getPrimaryService(ENV_SERVICE)
-                    .then((service) => {
-                        return service.getCharacteristic(TEMP_CHAR)
-                            .then((c) => c.startNotifications())
-                            .then((c) => {
-                                console.log("Subscribed to temperature");
-                                return {
-                                    env: {
-                                        service, characteristics: {
-                                            temperature: c,
-                                        }
-                                    }
-                                }
-                            })
-                            .then((state) => {
-                                return server.getPrimaryService(BUTTONS_SERVICE)
-                                    .then((service) => {
-                                        return service.getCharacteristic(PRESSES_CHAR)
-                                            .then((c) => c.startNotifications())
-                                            .then((c) => {
-                                                console.log("Subscribed to buttons");
-                                                return {
-                                                    ...state, ...{
-                                                        buttons: {
-                                                            service,
-                                                            characteristics: {
-                                                                presses: c,
-                                                            }
-                                                        }
-                                                    }
-                                                };
-                                            })
-                                    })
-                            })
-                            .then((state) => {
-                                return server.getPrimaryService(ACCEL_SERVICE)
-                                    .then((service) => {
-                                        return service.getCharacteristic(DATA_CHAR)
-                                            .then((c) => c.startNotifications())
-                                            .then((c) => {
-                                                console.log("Subscribed to acceleration");
-                                                return {
-                                                    ...state, ...{
-                                                        acceleration: {
-                                                            service,
-                                                            characteristics: {
-                                                                data: c,
-                                                            }
-                                                        }
-                                                    }
-                                                };
-                                            })
-                                    })
-                            })
-                            .then((state) => {
-                                return server.getPrimaryService(DFU_SERVICE)
-                                    .then((service) => {
-                                        return service.getCharacteristic(DFU_VERSION_CHAR)
-                                            .then((c) => {
-                                                    return {
-                                                        ...state, ...{
-                                                            dfu: {
-                                                                service,
-                                                                characteristics: {
-                                                                    version: c,
-                                                                }
-                                                            }
-                                                        }
-                                                    };
-                                            });
-                                        /*
-                                        var s2 = service.getCharacteristic(DFU_OFFSET_CHAR)
-                                            .then((c) => {
-                                                return {
-                                                    ...state, ...{
-                                                        dfu: {
-                                                            service,
-                                                            characteristics: {
-                                                                offset: c,
-                                                            }
-                                                        }
-                                                    }
-                                                };
-                                            });
-                                        return {
-                                            ...s1,
-                                            ...s2
-                                        };*/
-                                    })
-                            })
-                    })
-            })
-            .then((state) => this.#setState(state));
+        try {
+            const server = await this.#device.gatt.connect();
+            console.info("Server connected:", server);
+
+            const envService = await server.getPrimaryService(ENV_SERVICE);
+            const temperature = await envService.getCharacteristic(TEMP_CHAR);
+            await temperature.stopNotifications();
+            await temperature.startNotifications();
+            console.log("Temperature subscribed");
+
+            const buttonsService = await server.getPrimaryService(BUTTONS_SERVICE);
+            const presses = await buttonsService.getCharacteristic(PRESSES_CHAR);
+            await presses.stopNotifications();
+            await presses.startNotifications();
+            console.log("Buttons subscribed");
+
+            const accelService = await server.getPrimaryService(ACCEL_SERVICE);
+            const data = await accelService.getCharacteristic(DATA_CHAR);
+            await data.stopNotifications();
+            await data.startNotifications();
+            console.log("Acceleration subscribed");
+
+            const dfuService = await server.getPrimaryService(DFU_SERVICE);
+            const version = await dfuService.getCharacteristic(DFU_VERSION_CHAR);
+            await version.readValue(); // this will be cached, so we can use it later
+
+            console.log("Version subscribed");
+
+            this.#setState({
+                server,
+                env: {
+                    service: envService,
+                    characteristics: {
+                        temperature
+                    }
+                },
+                buttons: {
+                    service: buttonsService,
+                    characteristics: {
+                        presses,
+                    }
+                },
+                acceleration: {
+                    service: accelService,
+                    characteristics: {
+                        data,
+                    }
+                },
+                dfu: {
+                    service: dfuService,
+                    characteristics: {
+                        version,
+                    }
+                }
+            });
+        } catch (err) {
+            this.#onDisconnected(err);
+        }
     }
 
     #onDisconnected(reason) {
         console.log("Disconnected", reason);
+
+        this.#state?.server?.disconnect();
+
         this.#state = undefined;
+
         if (this.#injector) {
             window.clearInterval(this.#injector);
             this.#injector = undefined;
@@ -262,7 +232,7 @@ class BlePluginInstance {
     }
 
     #inject() {
-        console.debug(`State - temp: ${this.temperature}, a: ${this.presses?.a}, b: ${this.presses?.b}, accel:`, this.acceleration);
+        console.log("State - temp:", this.temperature, " a:", this.presses?.a, "b:", this.presses?.b, "accel:", this.acceleration);
 
         const elements = document.querySelectorAll("[data-ble]");
         for (const element of elements) {
@@ -279,9 +249,7 @@ class BlePluginInstance {
                 }
                 case "firmware": {
                     // noinspection JSPrimitiveTypeWrapperUsage
-                    this.firmware.then((v) => {
-                        element.innerText = "Version: " + v;
-                    });
+                    element.innerText = "Version: " + this.firmware;
                     break;
                 }
             }
@@ -290,48 +258,47 @@ class BlePluginInstance {
 
     get acceleration() {
         const value = this.#state?.acceleration?.characteristics?.data?.value;
-        if (!(value instanceof DataView)) {
+
+        try {
+            return {
+                x: value.getInt32(0, true),
+                y: value.getInt32(4, true),
+                z: value.getInt32(8, true),
+            };
+        } catch (err) {
             return null;
         }
-
-        return {
-            x: value.getInt32(0, true),
-            y: value.getInt32(4, true),
-            z: value.getInt32(8, true),
-        };
     }
 
     get firmware() {
-        return this.#state?.dfu?.characteristics?.version?.readValue().then((value) => {
-            if (!(value instanceof DataView)) {
-                return null;
-            }
-
-            var dec = new TextDecoder("utf-8");
-            var version = dec.decode(value.buffer);
-            return version;
-        });
+        const value = this.#state?.dfu?.characteristics?.version?.value;
+        try {
+            const dec = new TextDecoder("utf-8");
+            return dec.decode(value.buffer);
+        } catch (err) {
+            return null;
+        }
     }
 
     get temperature() {
         const value = this.#state?.env?.characteristics?.temperature?.value;
-        if (!(value instanceof DataView)) {
+        try {
+            return value.getUint16(0, true);
+        } catch (err) {
             return null;
         }
-
-        return value.getUint16(0, true);
     }
 
     get presses() {
         const value = this.#state?.buttons?.characteristics?.presses?.value;
-        if (!(value instanceof DataView)) {
+        try {
+            return {
+                a: value.getUint8(0),
+                b: value.getUint8(1)
+            };
+        } catch (err) {
             return null;
         }
-
-        return {
-            a: value.getUint8(0),
-            b: value.getUint8(1)
-        };
     }
 
     slideChanged(slide) {
