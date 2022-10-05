@@ -258,7 +258,7 @@ class Demo {
     }
 
     #init() {
-        this.#ble = Reveal.getConfig().ble;
+        this.#ble = Reveal.getConfig().ble.instance;
         this.#game = new Phaser.Game({
             type: Phaser.AUTO,
             parent: "demo",

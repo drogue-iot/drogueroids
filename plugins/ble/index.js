@@ -27,7 +27,18 @@ const DFU_VERSION_CHAR = "00001001-b0cd-11ec-871f-d45ddf138840";
 const ACCEL_SERVICE = "a2c21ba5-a2fa-455b-8e02-bcfca3e2ed64";
 const DATA_CHAR = "ba080c41-b7e0-4a4a-9bfd-98a7c4c87deb";
 
+function accelerationToString (accel){
+    try {
+        return `${accel.x} / ${accel.y} / ${accel.z}`;
+    }
+    catch(err) {
+        return "";
+    }
+}
+
 class BlePluginInstance {
+
+    #deck;
 
     #device;
     #state;
@@ -46,6 +57,19 @@ class BlePluginInstance {
      * Set to receive events on these callbacks, rather than controlling the presentation.
      */
     externalizeEvents;
+
+    constructor(deck, config) {
+        this.#deck = deck;
+
+        if (config.footer) {
+            const target = deck.getRevealElement();
+            const footer = document.createElement("footer");
+            footer.innerHTML = config.footer;
+            footer.classList.add("reveal-plugin-ble", "ble-footer");
+            target.appendChild(footer);
+        }
+        this.#inject();
+    }
 
     /**
      * Connect to device. Must be called from a user-guesture context.
@@ -232,24 +256,37 @@ class BlePluginInstance {
     }
 
     #inject() {
-        console.debug("State - temp:", this.temperature, " a:", this.presses?.a, "b:", this.presses?.b, "accel:", this.acceleration);
+        console.debug("State - connected:", this.connected, "temp:", this.temperature, "a:", this.presses?.a, "b:", this.presses?.b, "accel:", this.acceleration, "firmware:", this.firmware);
 
         const elements = document.querySelectorAll("[data-ble]");
         for (const element of elements) {
             switch (element.dataset.ble) {
+                case "visible": {
+                    if (this.connected) {
+                        element.style.display = null;
+                    } else {
+                        element.style.display = "none";
+                    }
+                    break;
+                }
                 case "temperature": {
-                    // noinspection JSPrimitiveTypeWrapperUsage
                     element.innerText = this.temperature;
                     break;
                 }
                 case "acceleration": {
-                    // noinspection JSPrimitiveTypeWrapperUsage
-                    element.innerText = JSON.stringify(this.acceleration);
+                    element.innerText = accelerationToString(this.acceleration);
                     break;
                 }
                 case "firmware": {
-                    // noinspection JSPrimitiveTypeWrapperUsage
-                    element.innerText = "Version: " + this.firmware;
+                    element.innerText = this.firmware;
+                    break;
+                }
+                case "presses-a": {
+                    element.innerText = this.presses?.a || 0;
+                    break;
+                }
+                case "presses-b": {
+                    element.innerText = this.presses?.b || 0;
                     break;
                 }
             }
@@ -301,6 +338,10 @@ class BlePluginInstance {
         }
     }
 
+    get connected() {
+        return this.#state?.server?.connected || false;
+    }
+
     slideChanged(slide) {
         this.#slide = slide;
         // inject right now
@@ -312,7 +353,11 @@ const BlePlugin = {
     id: 'ble',
 
     init: async (deck) => {
-        const instance = new BlePluginInstance();
+        console.log("Init BLE plugin", deck.getConfig().ble);
+
+        const instance = new BlePluginInstance(deck, {
+            footer: deck.getConfig()?.ble?.footer
+        });
         instance.onButton = (button) => {
             console.debug("Button pressed:", button);
             if (button === "a") {
@@ -322,7 +367,7 @@ const BlePlugin = {
             }
         };
 
-        deck.getConfig().ble = instance;
+        deck.getConfig().ble.instance = instance;
 
         deck.addKeyBinding(
             {keyCode: 67, key: 'C', description: "Connect bluetooth"},

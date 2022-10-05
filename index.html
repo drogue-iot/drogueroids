@@ -504,8 +504,7 @@ fn button_event() {
     }
 </script>
 
-<style>
-    #demo {
+<div id="demo" style="
         position: fixed;
         top: 0;
         left: 0;
@@ -513,10 +512,7 @@ fn button_event() {
         height: var(--slide-height);
         border: none;
         background: var(--r-background-color);
-    }
-</style>
-
-<div id="demo"></div>
+"></div>
 
 <span style="z-index: 100; position: relative;">
 <span data-ble="temperature">??</span> °C / <span data-ble="acceleration">??</span> / <span
@@ -1194,9 +1190,37 @@ hljs.highlightAll();
 </script><script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser-arcade-physics.min.js"></script>
 
 <script src="plugins/ble/index.js"></script>
+<link rel="stylesheet" href="plugins/ble/style.css">
+
 <script src="demo.js"></script>
 
+<style>
+  footer.reveal-plugin-ble {
+    color: darkgray;
+  }
+  footer.reveal-plugin-ble section {
+      flex-grow: 1;
+  }
+  footer.reveal-plugin-ble section > span {
+      display: inline-block;
+      text-align: right;
+      padding-right: 0.5em;
+  }
+</style>
+
 <script>
+    Reveal.configure({
+        ble: {
+            footer: `
+<section data-ble="visible">
+<span style="width: 3em;" data-ble="firmware"></span>
+<span style="width: 3em;"><span data-ble="temperature"></span> °C</span>
+<span style="width: 5em;"><span data-ble="presses-a"></span>:<span data-ble="presses-b"></span></span>
+<span style="width: 10em;"data-ble="acceleration"></span>
+</section>
+`
+        }
+    });
     Reveal.registerPlugin(BlePlugin);
     initDemo();
 </script></body></html>
