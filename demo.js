@@ -50,6 +50,8 @@ class Bullet extends Phaser.Physics.Arcade.Image {
     kill() {
         this.setActive(false);
         this.setVisible(false);
+        // work around an issue that inactive objects still cause collisions
+        this.body.reset(0,0);
     }
 }
 
