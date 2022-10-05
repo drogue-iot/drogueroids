@@ -232,10 +232,11 @@ pub async fn gatt_server_task(
     let mut notify_buttons = false;
     let mut notify_temp = false;
     let mut notify_xl = false;
-    let mut ticker = Ticker::every(Duration::from_secs(5));
+    let mut ticker = Ticker::every(Duration::from_secs(1));
     let env_service = &server.env;
     let buttons_service = &server.buttons;
     let accel_service = &server.accel;
+    let mut last_temp = None;
     loop {
         let mut interval = None;
         let next = ticker.next();
@@ -244,6 +245,11 @@ pub async fn gatt_server_task(
                 GattServerEvent::Env(e) => match e {
                     EnvironmentSensingServiceEvent::TemperatureCccdWrite { notifications } => {
                         notify_temp = notifications;
+                        if notify_temp && last_temp.is_some() {
+                            env_service
+                                .temperature_notify(&conn, last_temp.unwrap())
+                                .unwrap();
+                        }
                     }
                     EnvironmentSensingServiceEvent::PeriodWrite(period) => {
                         defmt::info!("Setting interval to {} seconds", period);
@@ -279,13 +285,18 @@ pub async fn gatt_server_task(
                 }
             }
             Either4::Second(_) => {
-                let value: i16 = temperature_celsius(sd).unwrap().to_num::<i8>() as i16;
-                defmt::info!("Measured temperature: {}℃", value);
+                let value = temperature_celsius(sd).unwrap().to_num::<i8>() as i16;
+
                 // Convert to fahrenheit
                 let value = ((value as f32 * 9.0 / 5.0) + 32.0) as i16;
 
+                let changed = last_temp.map(|t| t != value).unwrap_or(true);
+                last_temp.replace(value);
+
+                defmt::info!("Measured temperature: {}℃", value);
+
                 env_service.temperature_set(value).unwrap();
-                if notify_temp {
+                if notify_temp && changed {
                     env_service.temperature_notify(&conn, value).unwrap();
                 }
             }
