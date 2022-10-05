@@ -64,7 +64,7 @@ class Bullets extends Phaser.Physics.Arcade.Group {
             visible: false,
             classType: Bullet,
         }).forEach(b => {
-            b.scaleX = 4; b.scaleY = 4;
+            b.setScale(4);
         });
     }
 
@@ -78,11 +78,10 @@ class Bullets extends Phaser.Physics.Arcade.Group {
 }
 
 class Target extends Phaser.Physics.Arcade.Sprite {
-    points;
+    #points;
 
     constructor(scene, x, y, texture, frame) {
         super(scene, x, y, texture, frame);
-        scene.add.existing(this);
     }
 
     preUpdate(time, delta) {
@@ -90,7 +89,7 @@ class Target extends Phaser.Physics.Arcade.Sprite {
 
         if (this.y >= this.scene.physics.world.bounds.height) {
             this.kill();
-            this.points.addBugs(1);
+            this.#points.addBugs(1);
         }
     }
 
@@ -98,6 +97,10 @@ class Target extends Phaser.Physics.Arcade.Sprite {
         this.setActive(false);
         this.setVisible(false);
         this.destroy();
+    }
+
+    set points(points) {
+        this.#points = points;
     }
 }
 
@@ -113,8 +116,8 @@ class Targets extends Phaser.Physics.Arcade.Group {
     spawn(x, y) {
         const target = this.create(x, y);
         target.points = this.#points;
-        target.scaleX = 2;
-        target.scaleY = 2;
+        target.setSize(34, 20, false); // fix collision box
+        target.setScale(2);
         target.setVelocityY(150);
         target.play("bugs");
     }
@@ -135,27 +138,21 @@ class DemoScene extends Phaser.Scene {
         this.load.image("ship", new URL("assets/ferris.png", document.baseURI).href);
         this.load.image("bullet", new URL("assets/bullet1.png", document.baseURI).href);
         this.load.spritesheet("target", new URL("assets/bugs1.png", document.baseURI).href, {
-            frameWidth: 34, frameHeight: 20, endFrame: 4
+            frameWidth: 34, frameHeight: 20
         });
         this.load.setBaseURL("https://labs.phaser.io");
         this.load.bitmapFont("font", "assets/fonts/bitmap/carrier_command.png", "assets/fonts/bitmap/carrier_command.xml")
     }
 
     create() {
-        //this.physics.world.setBounds(0, 0, 400, 300);
         this.physics.world.setBoundsCollision(true, true, true, true);
 
         const sx = this.physics.world.bounds.width / 2;
         const sy = this.physics.world.bounds.height - 200;
 
         this.#ship = this.physics.add.image(sx, sy, "ship");
-        this.#ship.scaleX = 4;
-        this.#ship.scaleY = 4;
+        this.#ship.setScale(4);
         this.#ship.setCollideWorldBounds(true);
-
-        this.#ble.externalizeEvents = {
-            onButton: (button) => this.#onButton(button),
-        };
 
         this.anims.create({
             key: "bugs",
@@ -191,7 +188,7 @@ class DemoScene extends Phaser.Scene {
                 this.points.addBugs(5);
                 return false;
             }
-        )
+        );
 
         this.time.addEvent({
             delay: 1000,
@@ -199,7 +196,13 @@ class DemoScene extends Phaser.Scene {
             callback: () => {
                 this.checkSpawn();
             }
-        })
+        });
+
+
+        this.#ble.externalizeEvents = {
+            onButton: (button) => this.#onButton(button),
+        };
+
     }
 
     fire() {
@@ -262,6 +265,9 @@ class Demo {
             pixelArt: true,
             physics: {
                 default: 'arcade',
+                arcade: {
+                    debug: false
+                }
             },
             scene: new DemoScene(this.#ble),
         });
