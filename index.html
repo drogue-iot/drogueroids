@@ -416,45 +416,7 @@ ul.byline li + li {
 </style><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/v4-shims.min.css"></head><body><div class="reveal"><div class="slides"><section class="title" data-state="title"><h1>Rust</h1><h2>Embedded, Async, all the way!</h2><ul class="byline">
 <li><span class="author">Ulf Lilleengen</span></li>
 <li><span class="author">Jens Reimann</span></li>
-</ul></section><section id="_wip" data-state="demo"><div class="slide-content"><script>
-    // don't forget to call is in the footer section and to include demo.js too
-    function initDemo() {
-        let state = false;
-        let demo = null;
-
-        function check(currentSlide) {
-            const isDemo = currentSlide.dataset.state === "demo";
-            if (isDemo !== state) {
-                state = isDemo;
-                if (state) {
-                    demo = new Demo(document.getElementById("demo"));
-                } else {
-                    demo?.dispose();
-                }
-            }
-        }
-
-        Reveal.on("slidechanged", (event) => check(event.currentSlide));
-        // also check now
-        check(Reveal.getCurrentSlide());
-    }
-</script>
-
-<div id="demo" style="
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: var(--slide-width);
-  height: var(--slide-height);
-  border: none;
-  background: navy;
-"
-></div>
-
-<span style="z-index: 100; position: relative;">
-<span data-ble="temperature">??</span> °C / <span data-ble="acceleration">??</span> / <span data-ble="firmware">??</span>
-</span></div></section>
-<section id="_who_are_we"><h2>Who are we?</h2><div class="slide-content"><div class="ulist"><ul><li><p>Ulf Lilleengen (@lulf)</p></li><li><p>Jens Reimann (@ctron)</p></li></ul></div>
+</ul></section><section id="_who_are_we"><h2>Who are we?</h2><div class="slide-content"><div class="ulist"><ul><li><p>Ulf Lilleengen (@lulf)</p></li><li><p>Jens Reimann (@ctron)</p></li></ul></div>
 <div class="paragraph"><p>Software Engineers @ Red Hat</p></div></div></section>
 <section id="_what_do_we_do"><h2>What do we do?</h2><div class="slide-content"><div class="ulist"><ul><li><p>Work on open source IoT</p></li><li><p>Cloud &amp; embedded</p></li><li><p>With a focus on "Drogue IoT"</p></li></ul></div></div></section>
 <section><section id="_why_rust"><h2>Why Rust?</h2></section><section id="_why_rust_2"><div class="slide-content"><div class="quoteblock"><blockquote>A language empowering everyone to build reliable and efficient software.</blockquote><div class="attribution">&#8212; https://rust-lang.org</div></div></div></section><section id="_microsoft"><div class="slide-content"><div class="quoteblock"><blockquote>~70% of the vulnerabilities Microsoft assigns a CVE each year continue to be memory safety issues</blockquote><div class="attribution"><cite>A proactive approach to more secure code</cite><br>&#8212; Microsoft</div></div></div></section><section id="_meaning"><h2>Meaning?</h2><div class="slide-content"><div class="paragraph"><p>Those 70% of issue would never have existed, if Rust had been used!</p></div></div></section><section id="_microsoft_2"><div class="slide-content"><div class="imageblock"><img src="images/twitter_1.png" alt="twitter 1"></div></div></section><section id="_recall_eclipsecon_2019"><h2>Recall EclipseCon 2019?</h2><div class="slide-content"><div class="quoteblock"><blockquote><div class="paragraph"><p>A tale of Rust, the ESP32 and IoT</p></div></blockquote></div>
@@ -506,7 +468,48 @@ fn button_event() {
 <div class="ulist"><ul><li><p>An executor for embedded Rust, supporting <code>no_std</code>.</p></li><li><p>Async synchronization primitives, time keeping</p></li><li><p>HALs for nRF, STM32 and RP2040</p></li><li><p>Bootloader</p></li><li><p>USB, TCP/IP, LoRa and BLE</p></li></ul></div>
 <aside class="notes"><div class="ulist"><ul><li><p>Rust "async" need an executor to drive async workload</p></li><li><p>In "std", common executors are Tokio or "async-std"</p></li></ul></div></aside></div></section><section id="_embassy_friends" class="text-left"><h2>Embassy &amp; friends</h2><div class="slide-content"><aside class="notes"><div class="paragraph"><p>Embassy can be combined with other async Rust components.</p></div></aside>
 <div class="ulist"><ul><li><p>Drivers from crates.io</p></li><li><p>Ector</p></li><li><p>Drogue Device</p></li><li><p>…</p></li></ul></div></div></section><section id="_ector" class="text-left"><h2>Ector</h2><div class="slide-content"><div class="paragraph"><p>An actor framework.</p></div></div></section><section id="_drogue_device" class="text-left"><h2>Drogue Device</h2><div class="slide-content"><div class="paragraph"><p>Distribution of Embassy focused on a few boards supporting IoT, OTA updates.</p></div></div></section><section id="_why_rtos"><h2>Why RTOS?</h2><div class="slide-content"><div class="paragraph column"><p><span class="image"><img src="images/no_rtos.png" alt="No RTOS needed"></span></p></div></div></section></section>
-<section id="_demo"><h2>DEMO?</h2></section>
+<section id="_demo"><h2>DEMO?!</h2></section>
+<section id="_game" data-state="demo"><div class="slide-content"><script>
+    // don't forget to call is in the footer section and to include demo.js too
+    function initDemo() {
+        let state = false;
+        let demo = null;
+
+        function check(currentSlide) {
+            const isDemo = currentSlide.dataset.state === "demo";
+            if (isDemo !== state) {
+                state = isDemo;
+                if (state) {
+                    demo = new Demo(document.getElementById("demo"));
+                } else {
+                    demo?.dispose();
+                }
+            }
+        }
+
+        Reveal.on("slidechanged", (event) => check(event.currentSlide));
+        // also check now
+        check(Reveal.getCurrentSlide());
+    }
+</script>
+
+<style>
+  #demo {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: var(--slide-width);
+      height: var(--slide-height);
+      border: none;
+      background: var(--r-background-color);
+  }
+</style>
+
+<div id="demo"></div>
+
+<span style="z-index: 100; position: relative;">
+<span data-ble="temperature">??</span> °C / <span data-ble="acceleration">??</span> / <span data-ble="firmware">??</span>
+</span></div></section>
 <section id="_rust_embedded_community" class="text-left"><h2>Rust embedded community</h2><div class="slide-content"><div class="paragraph"><p>Join the community!</p></div>
 <div class="ulist"><ul><li><p><a href="https://github.com/rust-embedded" class="bare">https://github.com/rust-embedded</a></p></li></ul></div>
 <div class="paragraph"><p>Join the matrix.org chat!</p></div>
@@ -1174,9 +1177,9 @@ hljs.configure({
   ignoreUnescapedHTML: true,
 });
 hljs.highlightAll();
-</script><script src="plugins/ble/index.js"></script>
+</script><script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser-arcade-physics.min.js"></script>
 
-<script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser-arcade-physics.min.js"></script>
+<script src="plugins/ble/index.js"></script>
 <script src="demo.js"></script>
 
 <script>

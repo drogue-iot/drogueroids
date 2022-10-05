@@ -7,14 +7,6 @@
 :highlightjs-languages: rust
 :revealjs_history: true
 
-[state=demo]
-[%notitle]
-== WIP
-
-++++
-include::demo.html[]
-++++
-
 == Who are we?
 
 * Ulf Lilleengen (@lulf)
@@ -268,7 +260,14 @@ Distribution of Embassy focused on a few boards supporting IoT, OTA updates.
 [.column]
 image:images/no_rtos.png[No RTOS needed]
 
-== DEMO?
+== DEMO?!
+
+[%notitle,state=demo]
+== Game
+
+++++
+include::demo.html[]
+++++
 
 [.text-left]
 == Rust embedded community

@@ -22,18 +22,20 @@
     }
 </script>
 
-<div id="demo" style="
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: var(--slide-width);
-  height: var(--slide-height);
-  border: none;
-  background: navy;
-"
-></div>
+<style>
+  #demo {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: var(--slide-width);
+      height: var(--slide-height);
+      border: none;
+      background: var(--r-background-color);
+  }
+</style>
+
+<div id="demo"></div>
 
 <span style="z-index: 100; position: relative;">
 <span data-ble="temperature">??</span> °C / <span data-ble="acceleration">??</span> / <span data-ble="firmware">??</span>
 </span>
-

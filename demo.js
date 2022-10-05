@@ -138,10 +138,6 @@ class DemoScene extends Phaser.Scene {
             frameWidth: 34, frameHeight: 20, endFrame: 4
         });
         this.load.setBaseURL("https://labs.phaser.io");
-        //this.load.image('sky', "assets/skies/space3.png");
-        //this.load.image("ship", "assets/sprites/fmship.png");
-        //this.load.image("target", "assets/sprites/ufo.png");
-        //this.load.image("bullet", "assets/sprites/crate32.png");
         this.load.bitmapFont("font", "assets/fonts/bitmap/carrier_command.png", "assets/fonts/bitmap/carrier_command.xml")
     }
 
@@ -163,7 +159,7 @@ class DemoScene extends Phaser.Scene {
 
         this.anims.create({
             key: "bugs",
-            frames: this.anims.generateFrameNumbers("target", {start: 0, end: 4}),
+            frames: "target",
             frameRate: 3,
             repeat: -1
         });
@@ -262,7 +258,6 @@ class Demo {
         this.#ble = Reveal.getConfig().ble;
         this.#game = new Phaser.Game({
             type: Phaser.AUTO,
-            //canvas: this.#target,
             parent: "demo",
             pixelArt: true,
             physics: {
