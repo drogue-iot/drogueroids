@@ -5,7 +5,7 @@
   "main": "index.adoc",
   "scripts": {
     "build": "node build.js",
-    "stage": "rm -Rf staging && mkdir staging && cp index.html demo.js staging/ && cp -a images/ plugins/ node_modules/ assets/ staging/",
+    "stage": "rm -Rf staging && mkdir -p staging && cp index.html game.html demo.js staging/ && cp -a images/ plugins/ node_modules/ assets/ staging/",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
