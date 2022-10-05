@@ -38,8 +38,6 @@ function accelerationToString (accel){
 
 class BlePluginInstance {
 
-    #deck;
-
     #device;
     #state;
     #injector;
@@ -58,16 +56,7 @@ class BlePluginInstance {
      */
     externalizeEvents;
 
-    constructor(deck, config) {
-        this.#deck = deck;
-
-        if (config.footer) {
-            const target = deck.getRevealElement();
-            const footer = document.createElement("footer");
-            footer.innerHTML = config.footer;
-            footer.classList.add("reveal-plugin-ble", "ble-footer");
-            target.appendChild(footer);
-        }
+    constructor() {
         this.#inject();
     }
 
@@ -78,31 +67,27 @@ class BlePluginInstance {
      */
     async connect() {
 
-        try {
-            const device = await navigator.bluetooth.requestDevice({
-                filters: [
-                    {name: "Drogue Presenter"}
-                ],
-                optionalServices: [
-                    ENV_SERVICE,
-                    BUTTONS_SERVICE,
-                    DFU_SERVICE,
-                    ACCEL_SERVICE
-                ],
-            });
-            this.active = true;
-            console.log("Got device:", device);
-            this.#device = device;
-            device.addEventListener("gattserverdisconnected", () => this.#onDisconnected());
+        const device = await navigator.bluetooth.requestDevice({
+            filters: [
+                {name: "Drogue Presenter"}
+            ],
+            optionalServices: [
+                ENV_SERVICE,
+                BUTTONS_SERVICE,
+                DFU_SERVICE,
+                ACCEL_SERVICE
+            ],
+        });
+        this.active = true;
+        console.log("Got device:", device);
+        this.#device = device;
+        device.addEventListener("gattserverdisconnected", () => this.#onDisconnected());
 
-            try {
-                await this.#reconnect();
-            } catch (err) {
-                console.log("Failed to setup connection", err);
-                this.#onDisconnected(err);
-            }
+        try {
+            await this.#reconnect();
         } catch (err) {
-            alert("Failed to choose a device");
+            console.log("Failed to setup connection", err);
+            this.#onDisconnected(err);
         }
 
     }
@@ -355,9 +340,15 @@ const BlePlugin = {
     init: async (deck) => {
         console.log("Init BLE plugin", deck.getConfig().ble);
 
-        const instance = new BlePluginInstance(deck, {
-            footer: deck.getConfig()?.ble?.footer
-        });
+        const config = deck.getConfig()?.ble;
+        if (config?.footer) {
+            const target = deck.getRevealElement();
+            const footer = document.createElement("footer");
+            footer.innerHTML = config.footer;
+            footer.classList.add("reveal-plugin-ble", "ble-footer");
+            target.appendChild(footer);
+        }
+        const instance = new BlePluginInstance();
         instance.onButton = (button) => {
             console.debug("Button pressed:", button);
             if (button === "a") {
@@ -373,7 +364,10 @@ const BlePlugin = {
             {keyCode: 67, key: 'C', description: "Connect bluetooth"},
             () => {
                 instance
-                    .connect();
+                    .connect()
+                    .catch((err)=> {
+                        alert("Failed to choose a Bluetooth device");
+                    });
             }
         );
 

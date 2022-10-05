@@ -7,7 +7,7 @@ class Points {
     constructor(scene) {
         this.hits = 0;
         this.bugs = 0;
-        this.#label = scene.add.bitmapText(20, scene.physics.world.bounds.height - 120, "font", "");
+        this.#label = scene.add.bitmapText(20, 10, "font", "");
         this.#updateLabel();
     }
 
@@ -150,7 +150,7 @@ class DemoScene extends Phaser.Scene {
         this.physics.world.setBoundsCollision(true, true, true, true);
 
         const sx = this.physics.world.bounds.width / 2;
-        const sy = this.physics.world.bounds.height - 200;
+        const sy = this.physics.world.bounds.height - 50;
 
         this.#ship = this.physics.add.image(sx, sy, "ship");
         this.#ship.setScale(4);
@@ -179,7 +179,8 @@ class DemoScene extends Phaser.Scene {
         this.physics.add.collider(
             this.#ship,
             this.targets,
-            (o1, o2) => {},
+            (o1, o2) => {
+            },
             (o1, o2) => {
                 if (o1 instanceof Target) {
                     o1.kill();
@@ -215,14 +216,12 @@ class DemoScene extends Phaser.Scene {
     }
 
     spawn() {
-        let start = this.physics.world.bounds.width * Math.random() * 0.8;
-
+        const start = this.physics.world.bounds.width * Math.random() * 0.8;
         this.targets.spawn(start, 100);
     }
 
     checkSpawn() {
         const num = this.targets.getLength();
-        //console.debug("Check spawn", num);
         if (num < this.maxTargets) {
             if (Math.random() < 0.75) {
                 this.spawn();
@@ -237,42 +236,49 @@ class DemoScene extends Phaser.Scene {
     }
 
     update() {
+        super.update();
 
         const a = this.#ble.acceleration;
 
-        if (a !== null) {
+        if (a?.x !== undefined) {
             this.#ship.setVelocityX(a.x / 2.0);
         }
     }
 }
 
 class Demo {
-    #target;
-    #disposed;
-    #game;
+
+    #config;
     #ble;
 
-    constructor(target) {
-        this.#target = target;
+    #disposed;
+    #game;
+
+    constructor(ble, config) {
+        this.#ble = ble;
+        this.#config = config || {};
 
         console.log("Start demo");
         this.#init();
     }
 
     #init() {
-        this.#ble = Reveal.getConfig().ble.instance;
-        this.#game = new Phaser.Game({
-            type: Phaser.AUTO,
-            parent: "demo",
-            pixelArt: true,
-            physics: {
-                default: 'arcade',
-                arcade: {
-                    debug: false
-                }
-            },
-            scene: new DemoScene(this.#ble),
-        });
+        const config = {
+            ...{
+                type: Phaser.AUTO,
+                parent: "game",
+                pixelArt: true,
+                physics: {
+                    default: 'arcade',
+                    arcade: {
+                        debug: false,
+                    }
+                },
+                scene: new DemoScene(this.#ble),
+            }, ...this.#config
+        };
+        console.info("Game config", config);
+        this.#game = new Phaser.Game(config);
     }
 
     dispose() {

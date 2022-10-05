@@ -483,6 +483,13 @@ fn button_event() {
             return;
         }
 
+        if(!document.getElementById("game")) {
+            const ele = document.createElement("div");
+            ele.id = "game";
+            ele.style.zIndex = 10;
+            Reveal.getRevealElement().appendChild(ele);
+        }
+
         let state = false;
         let demo = null;
 
@@ -491,7 +498,14 @@ fn button_event() {
             if (isDemo !== state) {
                 state = isDemo;
                 if (state) {
-                    demo = new Demo(document.getElementById("demo"));
+                    demo = new Demo(Reveal.getConfig().ble.instance, {
+                        scale: {
+                            mode: Phaser.Scale.FIT,
+                            autoCenter: Phaser.Scale.CENTER_BOTH,
+                            width: 800,
+                            height: 600
+                        }
+                    });
                 } else {
                     demo?.dispose();
                 }
@@ -502,22 +516,7 @@ fn button_event() {
         // also check now
         check(Reveal.getCurrentSlide());
     }
-</script>
-
-<div id="demo" style="
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: var(--slide-width);
-        height: var(--slide-height);
-        border: none;
-        background: var(--r-background-color);
-"></div>
-
-<span style="z-index: 100; position: relative;">
-<span data-ble="temperature">??</span> °C / <span data-ble="acceleration">??</span> / <span
-    data-ble="firmware">??</span>
-</span></div></section>
+</script></div></section>
 <section id="_recap"><h2>Recap</h2></section>
 <section id="_rust_embedded_community" class="text-left"><h2>Rust embedded community</h2><div class="slide-content"><div class="paragraph"><p>Join the community!</p></div>
 <div class="ulist"><ul><li><p><a href="https://github.com/rust-embedded" class="bare">https://github.com/rust-embedded</a></p></li></ul></div>
@@ -1200,6 +1199,7 @@ hljs.highlightAll();
   }
   footer.reveal-plugin-ble section {
       flex-grow: 1;
+      text-align: right;
   }
   footer.reveal-plugin-ble section > span {
       display: inline-block;
@@ -1216,7 +1216,7 @@ hljs.highlightAll();
 <span style="width: 3em;" data-ble="firmware"></span>
 <span style="width: 3em;"><span data-ble="temperature"></span> °C</span>
 <span style="width: 5em;"><span data-ble="presses-a"></span>:<span data-ble="presses-b"></span></span>
-<span style="width: 10em;"data-ble="acceleration"></span>
+<span style="width: 10em;" data-ble="acceleration"></span>
 </section>
 `
         }

@@ -12,6 +12,13 @@
             return;
         }
 
+        if(!document.getElementById("game")) {
+            const ele = document.createElement("div");
+            ele.id = "game";
+            ele.style.zIndex = 10;
+            Reveal.getRevealElement().appendChild(ele);
+        }
+
         let state = false;
         let demo = null;
 
@@ -20,7 +27,14 @@
             if (isDemo !== state) {
                 state = isDemo;
                 if (state) {
-                    demo = new Demo(document.getElementById("demo"));
+                    demo = new Demo(Reveal.getConfig().ble.instance, {
+                        scale: {
+                            mode: Phaser.Scale.FIT,
+                            autoCenter: Phaser.Scale.CENTER_BOTH,
+                            width: 800,
+                            height: 600
+                        }
+                    });
                 } else {
                     demo?.dispose();
                 }
@@ -33,17 +47,3 @@
     }
 </script>
 
-<div id="demo" style="
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: var(--slide-width);
-        height: var(--slide-height);
-        border: none;
-        background: var(--r-background-color);
-"></div>
-
-<span style="z-index: 100; position: relative;">
-<span data-ble="temperature">??</span> °C / <span data-ble="acceleration">??</span> / <span
-    data-ble="firmware">??</span>
-</span>
