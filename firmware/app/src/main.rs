@@ -3,8 +3,6 @@
 #![macro_use]
 #![feature(type_alias_impl_trait)]
 #![feature(generic_associated_types)]
-#![allow(unused_imports)]
-#![allow(unused_variables)]
 
 use drogue_device::{
     drivers::ble::gatt::{
@@ -13,25 +11,16 @@ use drogue_device::{
         environment::*,
     },
     firmware::FirmwareManager,
-    shared::Shared,
-    Board,
 };
 use embassy_boot_nrf::FirmwareUpdater;
 use embassy_executor::Spawner;
 use embassy_futures::select::{select, select4, Either, Either4};
-use embassy_nrf::{
-    buffered_uarte::{BufferedUarte, State},
-    config::Config,
-    interrupt,
-    interrupt::Priority,
-    peripherals::{TIMER0, UARTE0},
-    uarte,
-};
+use embassy_nrf::{config::Config, interrupt, interrupt::Priority};
 use embassy_sync::{
     blocking_mutex::raw::ThreadModeRawMutex,
     channel::{Channel, DynamicReceiver, DynamicSender},
 };
-use embassy_time::{Delay, Duration, Ticker, Timer};
+use embassy_time::{Duration, Ticker, Timer};
 use futures::StreamExt;
 use heapless::Vec;
 use microbit_bsp::{
@@ -173,17 +162,24 @@ pub async fn button_watcher(
     buttons: DynamicSender<'static, [u16; 2]>,
 ) {
     let mut presses = [0u16; 2];
+    const MIN_DELAY: Duration = Duration::from_millis(20);
     loop {
         match select(a.wait_for_falling_edge(), b.wait_for_falling_edge()).await {
             Either::First(_) => {
-                defmt::info!("PRESSED A ");
-                presses[0] += 1;
-                let _ = buttons.try_send(presses);
+                Timer::after(MIN_DELAY).await;
+                if a.is_low() {
+                    defmt::info!("PRESSED A ");
+                    presses[0] += 1;
+                    let _ = buttons.try_send(presses);
+                }
             }
             Either::Second(_) => {
-                defmt::info!("PRESSED B ");
-                presses[1] += 1;
-                let _ = buttons.try_send(presses);
+                Timer::after(MIN_DELAY).await;
+                if b.is_low() {
+                    defmt::info!("PRESSED B ");
+                    presses[1] += 1;
+                    let _ = buttons.try_send(presses);
+                }
             }
         }
     }
