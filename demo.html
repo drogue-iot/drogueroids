@@ -1,6 +1,17 @@
 <script>
+
+    function isSpeakerView() {
+      return new URL(document.documentURI).searchParams.has("receiver");
+    }
+
     // don't forget to call is in the footer section and to include demo.js too
     function initDemo() {
+
+        if (isSpeakerView()) {
+            console.log("Demo won't start on speaker view");
+            return;
+        }
+
         let state = false;
         let demo = null;
 
@@ -23,19 +34,20 @@
 </script>
 
 <style>
-  #demo {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: var(--slide-width);
-      height: var(--slide-height);
-      border: none;
-      background: var(--r-background-color);
-  }
+    #demo {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: var(--slide-width);
+        height: var(--slide-height);
+        border: none;
+        background: var(--r-background-color);
+    }
 </style>
 
 <div id="demo"></div>
 
 <span style="z-index: 100; position: relative;">
-<span data-ble="temperature">??</span> °C / <span data-ble="acceleration">??</span> / <span data-ble="firmware">??</span>
+<span data-ble="temperature">??</span> °C / <span data-ble="acceleration">??</span> / <span
+    data-ble="firmware">??</span>
 </span>

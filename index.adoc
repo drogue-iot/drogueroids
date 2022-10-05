@@ -269,6 +269,8 @@ image:images/no_rtos.png[No RTOS needed]
 include::demo.html[]
 ++++
 
+== Recap
+
 [.text-left]
 == Rust embedded community
 
@@ -281,3 +283,7 @@ Join the matrix.org chat!
 * link:https://matrix.to/#/#rust-embedded:matrix.org[]
 * link:https://matrix.to/#/#embassy-rs:matrix.org[]
 * link:https://matrix.to/#/#drogue-iot:matrix.org[]
+
+== Thank you!
+
+Questions?
