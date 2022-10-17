@@ -5,14 +5,19 @@ class Points {
     lives;
     start_time;
     score;
-    #label;
+    #label_hits;
+    #label_lives;
+    #heart;
 
     constructor(scene) {
         this.hits = 0;
         this.bugs = 0;
         this.lives = 10;
-        this.#label = scene.add.bitmapText(20, 10, "font", "");
+        this.#label_hits = scene.add.bitmapText(20, 10, "font", "");
+        this.#label_lives = scene.add.bitmapText(680, 10, "font", "");
         this.#updateLabel();
+        this.#heart = scene.add.image(650, 30, "heart");
+        this.#heart.setScale(3);
         this.start_time = Date.now();
     }
 
@@ -27,8 +32,10 @@ class Points {
     }
 
     removeLife() {
-        this.lives -= 1;
-        this.#updateLabel();
+        if (this.lives > 0) {
+            this.lives -= 1;
+            this.#updateLabel();
+        }
     }
 
     computeScore() {
@@ -43,7 +50,8 @@ class Points {
 
     #updateLabel() {
         // TODO use a font supporting emojis : 💀 and  ❤
-        this.#label.setText(`Hits: ${this.hits} Lives️: ${this.lives}`);
+        this.#label_hits.setText(`Hits: ${this.hits} `);
+        this.#label_lives.setText(`${this.lives}`);
     }
 
 }
@@ -161,6 +169,7 @@ class DemoScene extends Phaser.Scene {
     preload() {
         this.load.image("ship", new URL("assets/ferris.png", document.baseURI).href);
         this.load.image("bullet", new URL("assets/bullet1.png", document.baseURI).href);
+        this.load.image("heart", new URL("assets/heart.png", document.baseURI).href);
         this.load.spritesheet("target", new URL("assets/bugs1.png", document.baseURI).href, {
             frameWidth: 34, frameHeight: 20
         });
@@ -291,7 +300,7 @@ class DemoScene extends Phaser.Scene {
         // check if game was already over to avoid scrambling the display
        if (!this.gameIsOver) {
            let score = points.computeScore();
-           this.add.bitmapText(40, 300, "font", `Game Over!\n ${score}`, 40);
+           this.add.bitmapText(40, 300, "font", `Game Over!\n\n ${score}`, 40);
            console.log(score);
        }
     }
