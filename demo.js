@@ -249,8 +249,8 @@ class DemoScene extends Phaser.Scene {
         var difficulty = this.difficulty();
         if ( ! this.gameIsOver) {
             if (num < (this.maxTargets + difficulty)) {
-                // todo increase spawnrate as difficulty goes ?
-                if (Math.random() < 0.75) {
+                // increase spawnrate as difficulty goes
+                if (Math.random() < (0.75+(difficulty/100))) {
                     this.spawn();
                 }
             }
@@ -288,10 +288,12 @@ class DemoScene extends Phaser.Scene {
     }
 
     gameOver(points) {
-        let score  = points.computeScore();
-        // FIXME : the score is not really readable
-        this.add.bitmapText(40, 300, "font", `Game Over!\n ${score}` , 40);
-        console.log(score);
+        // check if game was already over to avoid scrambling the display
+       if (!this.gameIsOver) {
+           let score = points.computeScore();
+           this.add.bitmapText(40, 300, "font", `Game Over!\n ${score}`, 40);
+           console.log(score);
+       }
     }
 }
 
