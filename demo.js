@@ -2,13 +2,18 @@ class Points {
 
     hits;
     bugs;
+    lives;
+    start_time;
+    score;
     #label;
 
     constructor(scene) {
         this.hits = 0;
         this.bugs = 0;
+        this.lives = 10;
         this.#label = scene.add.bitmapText(20, 10, "font", "");
         this.#updateLabel();
+        this.start_time = Date.now();
     }
 
     addHit() {
@@ -21,8 +26,24 @@ class Points {
         this.#updateLabel();
     }
 
+    removeLife() {
+        this.lives -= 1;
+        this.#updateLabel();
+    }
+
+    computeScore() {
+        var elapsed = Date.now() - this.start_time;
+        // the score calculation tries to takes into account
+        // - the play time
+        // - how many bugs you've killed
+        // - how many successfully went accross the screen
+        this.score = ( elapsed * this.hits ) / this.bugs;
+        return Math.floor(this.score);
+    }
+
     #updateLabel() {
-        this.#label.setText(`Bugs: ${this.bugs} Hits: ${this.hits}`);
+        // TODO use a font supporting emojis : 💀 and  ❤
+        this.#label.setText(`Hits: ${this.hits} Lives️: ${this.lives}`);
     }
 
 }
@@ -130,6 +151,7 @@ class DemoScene extends Phaser.Scene {
     #ble;
 
     maxTargets = 4;
+    gameIsOver = false;
 
     constructor(ble) {
         super();
@@ -189,6 +211,8 @@ class DemoScene extends Phaser.Scene {
                     o2.kill();
                 }
                 this.points.addBugs(5);
+                this.points.removeLife();
+                this.checkGameOver(this.points);
                 return false;
             }
         );
@@ -222,11 +246,21 @@ class DemoScene extends Phaser.Scene {
 
     checkSpawn() {
         const num = this.targets.getLength();
-        if (num < this.maxTargets) {
-            if (Math.random() < 0.75) {
-                this.spawn();
+        var difficulty = this.difficulty();
+        if ( ! this.gameIsOver) {
+            if (num < (this.maxTargets + difficulty)) {
+                // todo increase spawnrate as difficulty goes ?
+                if (Math.random() < 0.75) {
+                    this.spawn();
+                }
             }
         }
+    }
+
+    // every 10 s, the game gets harder by adding a bug
+    difficulty() {
+        var secs_elapsed = (Date.now() - this.points.start_time) / 1000
+        return Math.floor(secs_elapsed / 10)
     }
 
     #onButton(button) {
@@ -243,6 +277,21 @@ class DemoScene extends Phaser.Scene {
         if (a?.x !== undefined) {
             this.#ship.setVelocityX(a.x / 2.0);
         }
+    }
+
+    checkGameOver(points) {
+        if (points.lives <= 0) {
+            console.log("Game over ! ");
+            this.gameOver(points);
+            this.gameIsOver = true;
+        }
+    }
+
+    gameOver(points) {
+        let score  = points.computeScore();
+        // FIXME : the score is not really readable
+        this.add.bitmapText(40, 300, "font", `Game Over!\n ${score}` , 40);
+        console.log(score);
     }
 }
 

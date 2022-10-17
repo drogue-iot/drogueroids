@@ -5,6 +5,7 @@ This is a talk about Rust on embedded (microcontroller) devices.
 ## Pre-reqs
 
 * Enable the Web Bluetooth API ([chrome://flags/#enable-web-bluetooth](chrome://flags/#enable-web-bluetooth))
+* Install node dependencies : `npm install`
 * Install a local webserver (e.g `miniserve`)
   ```shell
   cargo install miniserve
