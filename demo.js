@@ -32,7 +32,7 @@ class Points {
     }
 
     computeScore() {
-        var elapsed = Date.now() - this.start_time;
+        var elapsed = (Date.now() - this.start_time) / 1000;
         // the score calculation tries to takes into account
         // - the play time
         // - how many bugs you've killed
