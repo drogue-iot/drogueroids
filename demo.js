@@ -317,6 +317,8 @@ class DemoScene extends Phaser.Scene {
            this.#gameOverLabel.setText(`Game Over!\n\nScore: ${score} \n\nPress B to restart`);
            this.#gameOverLabel.visible = true;
            console.log("Game over ! Score: "+score);
+           // fixme allow user to input username !
+           publishScore("boothUser", score);
        }
     }
 }
