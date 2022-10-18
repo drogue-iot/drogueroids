@@ -10,15 +10,11 @@ class Points {
     #heart;
 
     constructor(scene) {
-        this.hits = 0;
-        this.bugs = 0;
-        this.lives = 10;
         this.#label_hits = scene.add.bitmapText(20, 10, "font", "");
         this.#label_lives = scene.add.bitmapText(680, 10, "font", "");
-        this.#updateLabel();
+        this.resetScore();
         this.#heart = scene.add.image(650, 30, "heart");
         this.#heart.setScale(3);
-        this.start_time = Date.now();
     }
 
     addHit() {
@@ -49,9 +45,17 @@ class Points {
     }
 
     #updateLabel() {
-        // TODO use a font supporting emojis : 💀 and  ❤
         this.#label_hits.setText(`Hits: ${this.hits} `);
         this.#label_lives.setText(`${this.lives}`);
+    }
+
+    resetScore() {
+        this.hits = 0;
+        this.bugs = 0;
+        this.lives = 10;
+        this.start_time = Date.now();
+
+        this.#updateLabel()
     }
 
 }
@@ -161,6 +165,8 @@ class DemoScene extends Phaser.Scene {
     maxTargets = 4;
     gameIsOver = false;
 
+    #gameOverLabel;
+
     constructor(ble) {
         super();
         this.#ble = ble;
@@ -195,6 +201,10 @@ class DemoScene extends Phaser.Scene {
         });
 
         this.points = new Points(this);
+
+        // hide the "Game Over" text until the game is actually over
+        this.#gameOverLabel = this.add.bitmapText(40, 280, "font", ``, 40);
+        this.#gameOverLabel.visible = false;
 
         this.bullets = new Bullets(this);
         this.targets = new Targets(this, this.points);
@@ -275,6 +285,10 @@ class DemoScene extends Phaser.Scene {
     #onButton(button) {
         if (button === "a") {
             this.fire();
+        } else if (button === "b" && this.gameIsOver) {
+            this.points.resetScore();
+            this.#gameOverLabel.visible = false;
+            this.gameIsOver = false;
         }
     }
 
@@ -290,7 +304,7 @@ class DemoScene extends Phaser.Scene {
 
     checkGameOver(points) {
         if (points.lives <= 0) {
-            console.log("Game over ! ");
+            // fixme : find a way to delete the current targets
             this.gameOver(points);
             this.gameIsOver = true;
         }
@@ -300,8 +314,9 @@ class DemoScene extends Phaser.Scene {
         // check if game was already over to avoid scrambling the display
        if (!this.gameIsOver) {
            let score = points.computeScore();
-           this.add.bitmapText(40, 300, "font", `Game Over!\n\n ${score}`, 40);
-           console.log(score);
+           this.#gameOverLabel.setText(`Game Over!\n\nScore: ${score} \n\nPress B to restart`);
+           this.#gameOverLabel.visible = true;
+           console.log("Game over ! Score: "+score);
        }
     }
 }
