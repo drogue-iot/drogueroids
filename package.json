@@ -1,8 +1,8 @@
 {
-  "name": "eclipsecon-2022-rust-embedded",
+  "name": "drogerioids",
   "version": "1.0.0",
-  "description": "EclipseCon 2022 Talk - Rust Embedded",
-  "main": "index.adoc",
+  "description": "Drogerioids",
+  "main": "index.html",
   "scripts": {
     "build": "node build.js",
     "stage": "rm -Rf staging && mkdir -p staging && cp index.html game.html demo.js staging/ && cp -a images/ plugins/ node_modules/ assets/ staging/",
