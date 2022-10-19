@@ -36,7 +36,7 @@ A language empowering everyone to build reliable and efficient software.
 
 === Meaning?
 
-Those 70% of issue would never have existed, if Rust had been used!
+Those 70% would never have existed, if Rust had been used!
 
 [%notitle]
 === Microsoft
