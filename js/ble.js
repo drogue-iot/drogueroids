@@ -93,6 +93,15 @@ class BleConnector {
 
             const buttonsService = await server.getPrimaryService(BUTTONS_SERVICE);
             const presses = await buttonsService.getCharacteristic(PRESSES_CHAR);
+
+            try {
+                const initial = await presses.readValue();
+                console.info("Initial data", initial);
+            }
+            catch (err) {
+                console.warn("Failed to read initial data", err);
+            }
+
             await presses.stopNotifications();
             await presses.startNotifications();
             console.log("Buttons subscribed");
@@ -102,13 +111,6 @@ class BleConnector {
             data.addEventListener('characteristicvaluechanged', (v) => {
                 this.#scanButtons();
             });
-            try {
-                const initial = await data.readValue();
-                console.info("Initial data", initial);
-            }
-            catch (err) {
-                console.warn("Failed to read initial data", err);
-            }
             await data.stopNotifications();
             await data.startNotifications();
             console.log("Acceleration subscribed");
