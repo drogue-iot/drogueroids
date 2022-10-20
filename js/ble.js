@@ -27,11 +27,10 @@ const DFU_VERSION_CHAR = "00001001-b0cd-11ec-871f-d45ddf138840";
 const ACCEL_SERVICE = "a2c21ba5-a2fa-455b-8e02-bcfca3e2ed64";
 const DATA_CHAR = "ba080c41-b7e0-4a4a-9bfd-98a7c4c87deb";
 
-class BlePluginInstance {
+class BleConnector {
 
     #device;
     #state;
-    #buttonScanner;
     #lastPresses;
     #reconnectTimer;
 
@@ -39,11 +38,6 @@ class BlePluginInstance {
 
     onButton = (button) => {
     };
-
-    /**
-     * Set to receive events on these callbacks, rather than controlling the presentation.
-     */
-    externalizeEvents;
 
     constructor() {
     }
@@ -86,6 +80,9 @@ class BlePluginInstance {
     }
 
     async #reconnect() {
+
+        console.log("Reconnect", this.active);
+
         if (!this.active) {
             return;
         }
@@ -102,6 +99,16 @@ class BlePluginInstance {
 
             const accelService = await server.getPrimaryService(ACCEL_SERVICE);
             const data = await accelService.getCharacteristic(DATA_CHAR);
+            data.addEventListener('characteristicvaluechanged', (v) => {
+                this.#scanButtons();
+            });
+            try {
+                const initial = await data.readValue();
+                console.info("Initial data", initial);
+            }
+            catch (err) {
+                console.warn("Failed to read initial data", err);
+            }
             await data.stopNotifications();
             await data.startNotifications();
             console.log("Acceleration subscribed");
@@ -127,25 +134,19 @@ class BlePluginInstance {
     }
 
     #onDisconnected(reason) {
-        console.log("Disconnected", reason);
+        console.log("Disconnected", reason, "active:", this.active);
 
         this.#state?.server?.disconnect();
 
         this.#state = undefined;
 
-        if (this.#buttonScanner) {
-            window.clearInterval(this.#buttonScanner);
-            this.#buttonScanner = undefined;
-        }
-
         // trigger reconnect if we are still active
         if (this.active) {
             // trigger reconnect if none is pending
-            if (!this.#reconnectTimer) {
+            if (this.#reconnectTimer === undefined) {
                 this.#reconnectTimer = window.setTimeout(() => {
-                    this.#reconnectTimer = null;
+                    this.#reconnectTimer = undefined;
                     return this.#reconnect();
-
                 }, 500);
             }
         }
@@ -153,7 +154,6 @@ class BlePluginInstance {
 
     #setState(state) {
         this.#state = state;
-        this.#buttonScanner = window.setInterval(() => this.#scanButtons(), 100);
     }
 
     #scanButtons() {

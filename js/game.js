@@ -173,9 +173,7 @@ class GetReady extends Phaser.Scene {
     }
 
     init() {
-        this.#ble.externalizeEvents = {
-            onButton: (button) => this.#onButton(button),
-        };
+        this.#ble.onButton = (button) => this.#onButton(button);
     }
 
     create() {
@@ -186,7 +184,7 @@ class GetReady extends Phaser.Scene {
         const text = this.add.bitmapText(
             screenCenterX, screenCenterY,
             "font",
-            "Press A to start",
+            "Press B to start",
             30
         ).setOrigin(0.5);
 
@@ -202,7 +200,7 @@ class GetReady extends Phaser.Scene {
     }
 
     #onButton(button) {
-        if (button === "a") {
+        if (button === "b") {
             this.scene.start("Main");
         }
     }
@@ -288,9 +286,7 @@ class MainScene extends Phaser.Scene {
         });
 
 
-        this.#ble.externalizeEvents = {
-            onButton: (button) => this.#onButton(button),
-        };
+        this.#ble.onButton = (button) => this.#onButton(button);
 
     }
 
@@ -371,9 +367,7 @@ class GameOver extends Phaser.Scene {
     }
 
     init() {
-        this.#ble.externalizeEvents = {
-            onButton: (button) => this.#onButton(button),
-        };
+        this.#ble.onButton = (button) => this.#onButton(button);
     }
 
     preload() {
@@ -404,7 +398,7 @@ class GameOver extends Phaser.Scene {
         const text = this.add.bitmapText(
             screenCenterX, 420,
             "font",
-            "Press A to start",
+            "Press B to start",
             30
         ).setOrigin(0.5);
 
@@ -420,8 +414,8 @@ class GameOver extends Phaser.Scene {
     }
 
     #onButton(button) {
-        if (button === "a") {
-            this.scene.start("GetReady");
+        if (button === "b") {
+            this.scene.start("Main");
         }
     }
 }
@@ -467,7 +461,7 @@ class Game {
 
     dispose() {
         this.#disposed = true;
-        this.#ble.externalizeEvents = undefined;
+        this.#ble.onButton = undefined;
         console.log("End demo");
         this.#game.destroy({
             removeCanvas: false
