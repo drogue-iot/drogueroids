@@ -1,10 +1,10 @@
+const LIVES = 5;
+const BASE_NUM_TARGETS = 4;
+
 class Points {
 
     hits;
-    bugs;
     lives;
-    startTime;
-    score;
     #labelHits;
     #labelLives;
     #heart;
@@ -14,19 +14,34 @@ class Points {
         this.#labelLives = scene.add.bitmapText(680, 10, "font", "");
         this.#heart = scene.add.image(650, 30, "heart");
         this.#heart.setScale(3);
-        this.resetScore();
+        this.hits = 0;
+        this.lives = LIVES;
+        this.#updateLabel();
     }
 
-    addHit() {
+    /**
+     * Successfully hit a target.
+     */
+    targetHit() {
         this.hits += 1;
         this.#updateLabel();
     }
 
-    addBugs(inc) {
-        this.bugs += inc;
+    /**
+     * A bug was missed.
+     */
+    bugMissed() {
+        if (this.hits > 0) {
+            this.hits -= 1;
+        }
         this.#updateLabel();
     }
 
+    /**
+     * Remove a live.
+     *
+     * Doesn't check for game over.
+     */
     removeLife() {
         if (this.lives > 0) {
             this.lives -= 1;
@@ -34,29 +49,18 @@ class Points {
         }
     }
 
-    computeScore() {
-        const elapsed = (Date.now() - this.startTime) / 1000;
-        // the score calculation tries to takes into account
-        // - the play time
-        // - how many bugs you've killed
-        // - how many successfully went across the screen
-        const score = (elapsed * this.hits) / Math.max(this.bugs, 1);
-        console.log("score", score, "elapsed", elapsed, "bugs", Math.min(this.bugs, 1));
-        return Math.floor(score);
+    /**
+     * Check if the game is over.
+     *
+     * @returns {boolean} True if the game is over.
+     */
+    isGameOver() {
+        return this.lives <= 0;
     }
 
     #updateLabel() {
         this.#labelHits.setText(`Hits: ${this.hits} `);
         this.#labelLives.setText(`${this.lives}`);
-    }
-
-    resetScore() {
-        this.hits = 0;
-        this.bugs = 0;
-        this.lives = 5;
-        this.startTime = Date.now();
-
-        this.#updateLabel()
     }
 
 }
@@ -125,7 +129,7 @@ class Target extends Phaser.Physics.Arcade.Sprite {
 
         if (this.y >= this.scene.physics.world.bounds.height) {
             this.kill();
-            this.#points.addBugs(1);
+            this.#points.bugMissed();
         }
     }
 
@@ -209,8 +213,8 @@ class GetReady extends Phaser.Scene {
 class MainScene extends Phaser.Scene {
     #ship;
     #ble;
-
-    maxTargets = 4;
+    #points;
+    #started;
 
     constructor(ble) {
         super("Main");
@@ -229,6 +233,7 @@ class MainScene extends Phaser.Scene {
     }
 
     create() {
+        this.#started = Date.now();
         this.physics.world.setBoundsCollision(true, true, true, true);
 
         const sx = this.physics.world.bounds.width / 2;
@@ -245,17 +250,17 @@ class MainScene extends Phaser.Scene {
             repeat: -1
         });
 
-        this.points = new Points(this);
+        this.#points = new Points(this);
 
         this.bullets = new Bullets(this);
-        this.targets = new Targets(this, this.points);
+        this.targets = new Targets(this, this.#points);
         this.physics.add.collider(
             this.bullets,
             this.targets,
             (bullet, target) => {
                 bullet.kill();
                 target.kill();
-                this.points.addHit();
+                this.#points.targetHit();
             },
         );
         this.physics.add.collider(
@@ -270,60 +275,74 @@ class MainScene extends Phaser.Scene {
                 if (o2 instanceof Target) {
                     o2.kill();
                 }
-                this.points.addBugs(5);
-                this.points.removeLife();
-                this.checkGameOver();
+                this.#points.removeLife();
+                this.#checkGameOver();
                 return false;
             }
         );
 
         this.time.addEvent({
-            delay: 1000,
+            delay: 250,
             loop: true,
             callback: () => {
-                this.checkSpawn();
+                this.#checkSpawn();
             }
         });
-
 
         this.#ble.onButton = (button) => this.#onButton(button);
 
     }
 
-    fire() {
+    #fire() {
         const sx = this.#ship.body.x + this.#ship.body.width / 2;
         const sy = this.#ship.body.y;
 
         this.bullets.fireBullet(sx, sy);
     }
 
-    spawn() {
+    #spawn() {
         const start = this.physics.world.bounds.width * Math.random() * 0.8;
         this.targets.spawn(start, 100);
     }
 
-    checkSpawn() {
+    #checkSpawn() {
         const num = this.targets.getLength();
-        const difficulty = this.difficulty();
-        if (num < (this.maxTargets + difficulty)) {
-            // increase spawnrate as difficulty goes
-            if (Math.random() < (0.75 + (difficulty / 100))) {
-                this.spawn();
+        const difficulty = this.#difficulty();
+        const maxTargets = BASE_NUM_TARGETS + difficulty;
+
+        if (num < maxTargets) {
+            // base spawn chance of 75%
+            let chance = 0.75;
+            // plus 5% per difficulty level
+            chance += 0.05 * difficulty;
+            // cap at 100%
+            chance = Math.min(chance, 1);
+
+            console.log("CheckSpawn - num:", num, " maxTargets:", maxTargets, "chance:", chance);
+
+            if (Math.random() <= chance) {
+                this.#spawn();
             }
         }
     }
 
-    // every 10 s, the game gets harder by adding a bug
-    difficulty() {
-        const secondsElapsed = (Date.now() - this.points.startTime) / 1000
-        return Math.floor(secondsElapsed / 10)
+    /**
+     * Difficulty, on top of base number.
+     *
+     * Every 10s, the game gets harder by adding a bug.
+     *
+     * @returns {number}
+     */
+    #difficulty() {
+        const secondsElapsed = (Date.now() - this.#started) / 1000;
+        return Math.floor(secondsElapsed / 10);
     }
 
     #onButton(button) {
         if (button === "a") {
-            this.fire();
+            this.#fire();
         } else if (button === "b") {
-            this.gameOver();
+            this.#gameOver();
         }
     }
 
@@ -337,19 +356,16 @@ class MainScene extends Phaser.Scene {
         }
     }
 
-    checkGameOver() {
-        if (this.points.lives <= 0) {
-            this.gameOver();
+    #checkGameOver() {
+        if (this.#points.isGameOver()) {
+            this.#gameOver();
         }
     }
 
-    gameOver() {
+    #gameOver() {
         // check if game was already over to avoid scrambling the display
-        const score = this.points.computeScore();
+        const score = this.#points.hits;
         console.log("Game over! Score:", score);
-
-        // fixme allow user to input username !
-        // publishScore("boothUser", score);
 
         this.scene.start("GameOver", {
             score
@@ -378,8 +394,10 @@ class GameOver extends Phaser.Scene {
     create(data) {
         this.#score = data.score;
 
+        // fixme allow user to input username !
+        // publishScore("boothUser", score);
+
         const screenCenterX = this.cameras.main.worldView.x + this.cameras.main.width / 2;
-        const screenCenterY = this.cameras.main.worldView.y + this.cameras.main.height / 2;
 
         this.add.bitmapText(
             screenCenterX, 180,

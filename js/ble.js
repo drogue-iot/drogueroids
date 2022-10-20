@@ -164,7 +164,7 @@ class BleConnector {
             return;
         }
 
-        console.debug("Checking - last:", this.#lastPresses, "new:", presses);
+        // console.debug("Checking - last:", this.#lastPresses, "new:", presses);
 
         if (!this.#lastPresses) {
             this.#lastPresses = presses;
