@@ -101,6 +101,7 @@ class BleConnector {
             catch (err) {
                 console.warn("Failed to read initial data", err);
             }
+            await new Promise(r => setTimeout(r, 500));
 
             await presses.stopNotifications();
             await presses.startNotifications();
