@@ -1,5 +1,6 @@
 const LIVES = 5;
 const BASE_NUM_TARGETS = 4;
+const BONUS_EVERY = 15;
 
 class Points {
 
@@ -8,12 +9,17 @@ class Points {
     #labelHits;
     #labelLives;
     #heart;
+    #bonusIndicator;
+    #bonus;
 
     constructor(scene) {
         this.#labelHits = scene.add.bitmapText(20, 10, "font", "");
         this.#labelLives = scene.add.bitmapText(680, 10, "font", "");
-        this.#heart = scene.add.image(650, 30, "heart");
-        this.#heart.setScale(3);
+        this.#heart = scene.add.image(650, 30, "heart")
+            .setScale(3);
+        this.#bonusIndicator = scene.add.image(450, 30, "bonus")
+            .setScale(3);
+        this.#bonus = false;
         this.hits = 0;
         this.lives = LIVES;
         this.#updateLabel();
@@ -61,6 +67,16 @@ class Points {
     #updateLabel() {
         this.#labelHits.setText(`Hits: ${this.hits} `);
         this.#labelLives.setText(`${this.lives}`);
+        this.#bonusIndicator.visible = this.#bonus;
+    }
+
+    set bonus(bonus) {
+        this.#bonus = bonus;
+        this.#updateLabel();
+    }
+
+    get bonus() {
+        return this.#bonus;
     }
 
 }
@@ -215,6 +231,7 @@ class MainScene extends Phaser.Scene {
     #ble;
     #points;
     #started;
+    #bonuses;
 
     constructor(ble) {
         super("Main");
@@ -225,6 +242,7 @@ class MainScene extends Phaser.Scene {
         this.load.image("ship", new URL("assets/ferris.png", document.baseURI).href);
         this.load.image("bullet", new URL("assets/bullet1.png", document.baseURI).href);
         this.load.image("heart", new URL("assets/heart.png", document.baseURI).href);
+        this.load.image("bonus", new URL("assets/hat.png", document.baseURI).href);
         this.load.spritesheet("target", new URL("assets/bugs1.png", document.baseURI).href, {
             frameWidth: 34, frameHeight: 20
         });
@@ -238,6 +256,8 @@ class MainScene extends Phaser.Scene {
 
         const sx = this.physics.world.bounds.width / 2;
         const sy = this.physics.world.bounds.height - 50;
+
+        this.#bonuses = 0;
 
         this.#ship = this.physics.add.image(sx, sy, "ship");
         this.#ship.setScale(4);
@@ -286,6 +306,7 @@ class MainScene extends Phaser.Scene {
             loop: true,
             callback: () => {
                 this.#checkSpawn();
+                this.#checkBonus();
             }
         });
 
@@ -298,6 +319,37 @@ class MainScene extends Phaser.Scene {
         const sy = this.#ship.body.y;
 
         this.bullets.fireBullet(sx, sy);
+    }
+
+    #useBonus() {
+        if (!this.#points.bonus) {
+            return;
+        }
+
+        this.#points.bonus = false;
+        this.targets.children.each((target) => {
+            target?.kill();
+        });
+    }
+
+    /**
+     * Check if the player can have the next bonus.
+     */
+    #checkBonus() {
+        const maxBonusesNow = Math.floor(this.#runningFor / BONUS_EVERY);
+        if (this.#bonuses < maxBonusesNow) {
+            // you can only have one
+            this.#points.bonus = true;
+            // and remember we had it
+            this.#bonuses = maxBonusesNow;
+        }
+    }
+
+    /**
+     * The number of seconds the game is running.
+     */
+    get #runningFor() {
+        return (Date.now() - this.#started) / 1000;
     }
 
     #spawn() {
@@ -334,7 +386,7 @@ class MainScene extends Phaser.Scene {
      * @returns {number}
      */
     #difficulty() {
-        const secondsElapsed = (Date.now() - this.#started) / 1000;
+        const secondsElapsed = this.#runningFor;
         return Math.floor(secondsElapsed / 10);
     }
 
@@ -342,7 +394,7 @@ class MainScene extends Phaser.Scene {
         if (button === "a") {
             this.#fire();
         } else if (button === "b") {
-            this.#gameOver();
+            this.#useBonus();
         }
     }
 
