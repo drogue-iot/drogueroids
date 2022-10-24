@@ -51,7 +51,7 @@ class BleConnector {
 
         const device = await navigator.bluetooth.requestDevice({
             filters: [
-                {name: "drogueroids controller"}
+                {name: "Drogue Presenter"}
             ],
             optionalServices: [
                 BUTTONS_SERVICE,

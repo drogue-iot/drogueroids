@@ -61,7 +61,7 @@ async fn main(s: Spawner) {
     let board = Microbit::new(config());
 
     // Spawn the underlying softdevice task
-    let sd = enable_softdevice("drogueroids controller");
+    let sd = enable_softdevice("Drogue Presenter");
 
     let version = FIRMWARE_REVISION.unwrap_or(FIRMWARE_VERSION);
     defmt::info!("Running firmware version {}", version);
@@ -71,7 +71,7 @@ async fn main(s: Spawner) {
     let server = GATT.init(GattServer::new(sd).unwrap());
     server
         .device_info
-        .initialize(b"drogueroids controller", b"1.0", b"Red Hat", b"1.0")
+        .initialize(b"Drogue Presenter", b"1.0", b"Red Hat", b"1.0")
         .unwrap();
     server
         .env
@@ -140,7 +140,7 @@ async fn main(s: Spawner) {
         EVENTS.sender().into(),
         BUTTONS.receiver().into(),
         XL_CHAN.receiver().into(),
-        "drogueroids controller",
+        "Drogue Presenter",
     ))
     .unwrap();
 }
