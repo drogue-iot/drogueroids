@@ -232,6 +232,7 @@ class MainScene extends Phaser.Scene {
     #points;
     #started;
     #bonuses;
+    
 
     constructor(ble) {
         super("Main");
@@ -415,12 +416,15 @@ class MainScene extends Phaser.Scene {
     }
 
     #gameOver() {
-        // check if game was already over to avoid scrambling the display
         const score = this.#points.hits;
+        this.#ble.highScore = Math.max(score, this.#ble.highScore);
+        const highScore = this.#ble.highScore;
+
         console.log("Game over! Score:", score);
 
         this.scene.start("GameOver", {
-            score
+            score,
+            highScore
         });
     }
 }
@@ -428,6 +432,7 @@ class MainScene extends Phaser.Scene {
 class GameOver extends Phaser.Scene {
     #ble;
     #score;
+    #highScore;
 
     constructor(ble) {
         super("GameOver");
@@ -445,6 +450,7 @@ class GameOver extends Phaser.Scene {
 
     create(data) {
         this.#score = data.score;
+        this.#highScore = data.highScore;
 
         // fixme allow user to input username !
         // publishScore("boothUser", score);
@@ -469,6 +475,13 @@ class GameOver extends Phaser.Scene {
             screenCenterX, 420,
             "font",
             "Press B to start",
+            30
+        ).setOrigin(0.5);
+
+        this.add.bitmapText(
+            screenCenterX, 510,
+            "font",
+            `High score: ${this.#highScore}`,
             30
         ).setOrigin(0.5);
 
