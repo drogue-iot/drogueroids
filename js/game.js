@@ -417,14 +417,10 @@ class MainScene extends Phaser.Scene {
 
     #gameOver() {
         const score = this.#points.hits;
-        this.#ble.highScore = Math.max(score, this.#ble.highScore);
-        const highScore = this.#ble.highScore;
-
         console.log("Game over! Score:", score);
 
         this.scene.start("GameOver", {
             score,
-            highScore
         });
     }
 }
@@ -432,7 +428,7 @@ class MainScene extends Phaser.Scene {
 class GameOver extends Phaser.Scene {
     #ble;
     #score;
-    #highScore;
+    newHighScore;
 
     constructor(ble) {
         super("GameOver");
@@ -450,7 +446,15 @@ class GameOver extends Phaser.Scene {
 
     create(data) {
         this.#score = data.score;
-        this.#highScore = data.highScore;
+        
+        let highScore = localStorage.getItem('highScore');
+        if (highScore < this.#score) {
+            localStorage.setItem('highScore', this.#score);
+            highScore = this.#score
+            this.newHighScore = true;
+        } else {
+            this.newHighScore = false;
+        }
 
         // fixme allow user to input username !
         // publishScore("boothUser", score);
@@ -478,12 +482,17 @@ class GameOver extends Phaser.Scene {
             30
         ).setOrigin(0.5);
 
+        let highScoreText = `High score: ${highScore}`;
+        if (this.newHighScore) {
+            highScoreText = 'New high score!';
+        }
         this.add.bitmapText(
             screenCenterX, 510,
             "font",
-            `High score: ${this.#highScore}`,
+            highScoreText,
             30
         ).setOrigin(0.5);
+
 
         this.tweens.add({
             targets: text,
