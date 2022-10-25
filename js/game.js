@@ -6,7 +6,6 @@ class Points {
 
     hits;
     lives;
-    highScore;
     #labelHits;
     #labelLives;
     #heart;
@@ -78,11 +77,6 @@ class Points {
 
     get bonus() {
         return this.#bonus;
-    }
-
-    get highScore() {
-        this.highScore = Math.max(this.highScore, this.hits);
-        return this.highScore;
     }
 
 }
@@ -238,6 +232,7 @@ class MainScene extends Phaser.Scene {
     #points;
     #started;
     #bonuses;
+    
 
     constructor(ble) {
         super("Main");
@@ -422,7 +417,9 @@ class MainScene extends Phaser.Scene {
 
     #gameOver() {
         const score = this.#points.hits;
-        const highScore = this.#points.highScore();
+        this.#ble.highScore = Math.max(score, this.#ble.highScore);
+        const highScore = this.#ble.highScore;
+
         console.log("Game over! Score:", score);
 
         this.scene.start("GameOver", {
@@ -481,10 +478,10 @@ class GameOver extends Phaser.Scene {
             30
         ).setOrigin(0.5);
 
-        const text = this.add.bitmapText(
+        this.add.bitmapText(
             screenCenterX, 510,
             "font",
-            `Score to beat: ${this.#highScore}`,
+            `High score: ${this.#highScore}`,
             30
         ).setOrigin(0.5);
 

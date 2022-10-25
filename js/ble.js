@@ -35,6 +35,7 @@ class BleConnector {
     #reconnectTimer;
 
     active = false;
+    highScore = 0;
 
     onButton = (button) => {
     };
